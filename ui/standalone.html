@@ -1,0 +1,3468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSSPDCL GridResQ AI — Operations Center (Hyderabad Metro)</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MapLibre GL JS & CSS via CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* CSS Variables for 100% Reliable Dark / Light Theming */
+    :root {
+      --bg-page: #020617;
+      --bg-header: rgba(15, 23, 42, 0.95);
+      --bg-sidebar: #0f172a;
+      --bg-card: rgba(15, 23, 42, 0.92);
+      --bg-inner: #020617;
+      --border-color: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: #020617;
+      --nav-hover: rgba(30, 41, 59, 0.7);
+    }
+
+    body.theme-light {
+      --bg-page: #f1f5f9;
+      --bg-header: rgba(255, 255, 255, 0.95);
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-inner: #f8fafc;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --input-bg: #f8fafc;
+      --nav-hover: #f1f5f9;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .theme-card {
+      background-color: var(--bg-card) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-main) !important;
+    }
+
+    .theme-inner {
+      background-color: var(--bg-inner) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-main) !important;
+    }
+
+    .theme-header {
+      background-color: var(--bg-header) !important;
+      border-color: var(--border-color) !important;
+    }
+
+    .theme-sidebar {
+      background-color: var(--bg-sidebar) !important;
+      border-color: var(--border-color) !important;
+    }
+
+    .theme-border {
+      border-color: var(--border-color) !important;
+    }
+
+    .theme-text-muted {
+      color: var(--text-muted) !important;
+    }
+
+    .theme-input {
+      background-color: var(--input-bg) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-main) !important;
+    }
+
+    @keyframes pulseRadar {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .radar-pulse {
+      animation: pulseRadar 2s infinite ease-out;
+    }
+
+    .map-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 9999 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+    }
+  </style>
+</head>
+<body id="appBody" class="min-h-screen flex font-sans selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+
+  <!-- 1. Left Navigation Sidebar (Openable & Closeable) -->
+  <aside
+    id="sidebar"
+    class="theme-sidebar w-64 shrink-0 flex flex-col justify-between border-r transition-all duration-300 z-30 select-none overflow-hidden"
+  >
+    <div>
+      <!-- Branding & Close Button -->
+      <div class="p-4 border-b theme-border flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+            <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-sm font-bold tracking-tight">TSSPDCL GridResQ</h1>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-mono">
+                HYD
+              </span>
+            </div>
+            <p class="text-[10px] theme-text-muted">Cybercity &amp; Metro Zone</p>
+          </div>
+        </div>
+
+        <!-- Sidebar Collapse Button -->
+        <button
+          onclick="toggleSidebar(false)"
+          class="p-1.5 rounded-lg border theme-border hover:bg-cyan-500/10 cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors"
+          title="Close Sidebar"
+        >
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links to Dedicated Pages -->
+      <nav class="p-3 space-y-1.5">
+        <button
+          id="nav-map"
+          onclick="navigateToPage('map')"
+          class="w-full flex items-center justify-between p-2.5 rounded-xl bg-cyan-600 text-white shadow-md shadow-cyan-600/30 font-semibold cursor-pointer text-left transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg bg-cyan-700/50 text-white">
+              <i data-lucide="map" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs block leading-tight">Grid Map &amp; Hubs</span>
+              <span class="text-[10px] text-cyan-100 block leading-tight">GIS Substation &amp; DTRs</span>
+            </div>
+          </div>
+        </button>
+
+        <button
+          id="nav-incidents"
+          onclick="navigateToPage('incidents')"
+          class="w-full flex items-center justify-between p-2.5 rounded-xl theme-card border-transparent hover:border-slate-500/30 cursor-pointer text-left transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg theme-inner text-cyan-500">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs block leading-tight">Incidents</span>
+              <span id="sidebarIncidentsSubtext" class="text-[10px] theme-text-muted block leading-tight">1 Active Ticket</span>
+            </div>
+          </div>
+          <span id="sidebarIncidentsCount" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 border border-red-500/30 font-mono">
+            1
+          </span>
+        </button>
+
+        <button
+          id="nav-crews"
+          onclick="navigateToPage('crews')"
+          class="w-full flex items-center justify-between p-2.5 rounded-xl theme-card border-transparent hover:border-slate-500/30 cursor-pointer text-left transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg theme-inner text-cyan-500">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs block leading-tight">Field Crews &amp; Dispatch</span>
+              <span class="text-[10px] theme-text-muted block leading-tight">3 Ready Section Gangs</span>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-mono">
+            3
+          </span>
+        </button>
+
+        <button
+          id="nav-calls"
+          onclick="navigateToPage('calls')"
+          class="w-full flex items-center justify-between p-2.5 rounded-xl theme-card border-transparent hover:border-slate-500/30 cursor-pointer text-left transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg theme-inner text-cyan-500">
+              <i data-lucide="phone-call" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs block leading-tight">Telephony &amp; Live Calls</span>
+              <span class="text-[10px] theme-text-muted block leading-tight">Exotel 1912 Helpline</span>
+            </div>
+          </div>
+          <span id="callNavPing" class="hidden w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+        </button>
+
+        <button
+          id="nav-diagnosis"
+          onclick="navigateToPage('diagnosis')"
+          class="w-full flex items-center justify-between p-2.5 rounded-xl theme-card border-transparent hover:border-slate-500/30 cursor-pointer text-left transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg theme-inner text-purple-500">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs block leading-tight">Gemini AI Diagnosis</span>
+              <span class="text-[10px] theme-text-muted block leading-tight">Evidence-Grounded Triage</span>
+            </div>
+          </div>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer: Theme Toggle & Utility Badge -->
+    <div class="p-3 border-t theme-border theme-inner space-y-2">
+      <div class="flex items-center justify-between text-xs px-1 theme-text-muted">
+        <span class="text-[11px] font-medium flex items-center gap-1.5">
+          <i data-lucide="building-2" class="w-3.5 h-3.5 text-cyan-500"></i>
+          <span>TSSPDCL Section Portal</span>
+        </span>
+        <span class="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold">
+          <i data-lucide="radio" class="w-3 h-3 animate-pulse"></i> Online
+        </span>
+      </div>
+
+      <!-- Theme Switcher Button -->
+      <button
+        onclick="toggleTheme()"
+        id="themeToggleBtn"
+        class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border theme-border theme-card text-xs font-semibold hover:border-cyan-500 transition-all cursor-pointer shadow-sm"
+      >
+        <i data-lucide="sun" id="themeBtnIcon" class="w-4 h-4 text-amber-500"></i>
+        <span id="themeBtnText">Switch to Light Theme</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 2. Main Content Canvas -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    
+    <!-- Synthetic Safety Banner -->
+    <div class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-center text-xs font-semibold text-amber-500 flex items-center justify-center gap-2">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i>
+      <span>DEMO MODE — SYNTHETIC TSSPDCL HYDERABAD GRID DATA ONLY — STRICTLY ISOLATED FROM SCADA/OMS</span>
+    </div>
+
+    <!-- Header with Sidebar Toggle & Theme Control -->
+    <header class="theme-header border-b px-4 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20 backdrop-blur-md shadow-sm">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar Open / Close Button -->
+        <button
+          onclick="toggleSidebar()"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border theme-border theme-card hover:border-cyan-500 cursor-pointer transition-all"
+          title="Toggle Navigation Sidebar"
+        >
+          <i data-lucide="menu" class="w-4 h-4 text-cyan-500"></i>
+          <span class="text-xs font-semibold">Menu</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs theme-text-muted">Circle:</span>
+          <span class="text-xs font-bold theme-card px-2 py-1 rounded border theme-border text-cyan-500">
+            Hyderabad Metro / Cybercity
+          </span>
+        </div>
+      </div>
+
+      <!-- Controls & Quick Theme Toggle in Header -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <div class="flex items-center gap-2 theme-card px-3 py-1.5 rounded-lg border theme-border">
+          <i data-lucide="activity" class="w-4 h-4 text-cyan-500"></i>
+          <label for="scenarioSelector" class="text-xs font-medium">Scenario:</label>
+          <select
+            id="scenarioSelector"
+            onchange="switchScenario(this.value)"
+            class="theme-input text-xs rounded border theme-border px-2 py-1 outline-none cursor-pointer"
+          >
+            <option value="feeder_fault">TSSPDCL Feeder F-07 Trip (Ayyappa Society, 740 Consumers)</option>
+            <option value="transformer_failure">DTR-MDP-102 Flashover (Ayyappa Society, 320 Consumers)</option>
+            <option value="ambiguous_incident">Ambiguous Location (Cyber Towers Vicinity)</option>
+            <option value="noisy_telemetry">Kondapur DTR-201 Voltage Fluctuation</option>
+          </select>
+        </div>
+
+        <button
+          onclick="triggerCallSimulation()"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-600/30 transition-all cursor-pointer active:scale-95"
+        >
+          <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
+          <span>Simulate 1912 Call</span>
+        </button>
+
+        <!-- Quick Theme Toggle in Header -->
+        <button
+          onclick="toggleTheme()"
+          class="p-2 rounded-lg border theme-border theme-card hover:border-cyan-500 text-xs font-semibold transition-all cursor-pointer"
+          title="Toggle Light / Dark Mode"
+        >
+          <i data-lucide="sun" id="headerThemeIcon" class="w-4 h-4 text-amber-500"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dynamic Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col gap-4">
+
+      <!-- ================= PAGE 1: GRID MAP & HUBS ================= -->
+      <section id="page-map" class="space-y-4">
+        <!-- Hub Search & Quick Selector Bar -->
+        <div class="theme-card border rounded-2xl p-3.5 shadow-lg backdrop-blur-md">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input
+                id="hubSearchInput"
+                type="text"
+                oninput="handleHubSearch(this.value)"
+                placeholder="Search TSSPDCL Hub, Locality, Feeder (e.g. Madhapur, Ayyappa Society, F-07, Kondapur)..."
+                class="w-full theme-input text-xs rounded-xl pl-9 pr-3 py-2 border outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-cyan-500"
+              />
+            </div>
+            <div id="hubPillsContainer" class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"></div>
+          </div>
+
+          <!-- Active Hub Summary Bar -->
+          <div class="mt-3 pt-2.5 border-t theme-border flex flex-wrap items-center justify-between text-xs gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-cyan-500"></i>
+              <span id="activeHubName" class="font-bold">Cyber Towers &amp; Ayyappa Society Hub</span>
+              <span id="activeHubLocality" class="text-[11px] theme-text-muted">(Madhapur Section, TSSPDCL)</span>
+            </div>
+
+            <div class="flex items-center gap-4 text-[11px]">
+              <div>
+                <span class="theme-text-muted">11kV Feeder:</span>
+                <span id="activeHubFeeder" class="font-mono font-semibold ml-1 text-cyan-500">F-07-CYBER</span>
+              </div>
+              <div>
+                <span class="theme-text-muted">Total Consumers:</span>
+                <span id="activeHubMeters" class="font-mono font-semibold ml-1">740</span>
+              </div>
+              <div id="activeHubStatus" class="flex items-center gap-1 text-red-500 font-semibold animate-pulse">
+                <i data-lucide="alert-triangle" class="w-3 h-3"></i> 11kV FEEDER OUTAGE
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Map & Transformers Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Fullscreen-Capable MapLibre Map (7 cols) -->
+          <div class="lg:col-span-7">
+            <div id="mapWrapper" class="relative w-full h-[580px] rounded-2xl overflow-hidden border theme-border shadow-2xl theme-inner">
+              <div id="map" class="w-full h-full"></div>
+
+              <!-- Top Breadcrumb: Hierarchy Representation -->
+              <div class="absolute top-3 left-3 right-16 z-10 pointer-events-none">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border theme-border theme-card backdrop-blur-md shadow-xl text-xs pointer-events-auto">
+                  <span class="text-sky-500 font-bold flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i> 33/11kV Substation</span>
+                  <span class="theme-text-muted">➔</span>
+                  <span class="text-cyan-500 font-bold flex items-center gap-1"><i data-lucide="share-2" class="w-3 h-3"></i> 11kV Feeder</span>
+                  <span class="theme-text-muted">➔</span>
+                  <span class="text-amber-500 font-bold flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> DTR (415V)</span>
+                  <span class="theme-text-muted">➔</span>
+                  <span class="text-purple-500 font-bold flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> Consumer (USC)</span>
+                </div>
+              </div>
+
+              <!-- Fullscreen & Map Controls -->
+              <div class="absolute top-3 right-3 flex flex-col gap-2 z-10">
+                <div class="theme-card backdrop-blur-md border theme-border rounded-xl p-1.5 shadow-xl flex flex-col gap-1">
+                  <button onclick="toggleMapFullscreen()" class="p-1.5 hover:bg-cyan-500/10 rounded-lg cursor-pointer" title="Toggle Fullscreen Map">
+                    <i data-lucide="maximize-2" id="fsIcon" class="w-4 h-4 text-cyan-500"></i>
+                  </button>
+                  <button onclick="mapInstance && mapInstance.zoomIn()" class="p-1.5 hover:bg-cyan-500/10 rounded-lg cursor-pointer">
+                    <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="mapInstance && mapInstance.zoomOut()" class="p-1.5 hover:bg-cyan-500/10 rounded-lg cursor-pointer">
+                    <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="resetMapView()" class="p-1.5 hover:bg-cyan-500/10 rounded-lg cursor-pointer text-cyan-500" title="Reset Hyderabad Center">
+                    <i data-lucide="compass" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Legend Overlay -->
+              <div class="absolute bottom-3 left-3 theme-card backdrop-blur-md border theme-border rounded-xl p-3 text-xs shadow-xl z-10">
+                <div class="flex items-center gap-1.5 font-bold mb-2">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-500"></i>
+                  <span>TSSPDCL Hyderabad Hierarchy</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] theme-text-muted">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-sky-500 border border-white"></span>
+                    <span>33/11kV Substation</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span>DTR Healthy</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                    <span>DTR Outage / Trip</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    <span>Consumer Meter (USC)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected Asset Inspector -->
+              <div id="assetInspector" class="absolute bottom-3 right-3 theme-card border theme-border rounded-xl p-3.5 text-xs shadow-2xl max-w-sm z-10 hidden">
+                <div class="flex items-center justify-between mb-1">
+                  <span id="inspectCode" class="font-mono text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded text-[10px]">DTR-MDP-102</span>
+                  <span id="inspectState" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-500">DOWN</span>
+                </div>
+                <h4 id="inspectName" class="font-bold mb-1">250kVA DTR Ayyappa Society</h4>
+                <p id="inspectDetails" class="theme-text-muted text-[11px] mb-2">415V / 240V Step-Down Transformer</p>
+                <div class="p-2 rounded theme-inner border theme-border text-[11px] flex justify-between">
+                  <span class="theme-text-muted">Consumers:</span>
+                  <span id="inspectConsumers" class="font-bold font-mono">320 meters</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DTR Transformers under Selected Hub (5 cols) -->
+          <div class="lg:col-span-5 flex flex-col">
+            <div class="theme-card border theme-border rounded-2xl p-4 shadow-xl flex flex-col h-[580px]">
+              <div class="flex items-center justify-between pb-3 border-b theme-border mb-3">
+                <div class="flex items-center gap-2">
+                  <div class="p-1.5 rounded-lg theme-inner text-cyan-500">
+                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold">DTR Transformers under Hub</h3>
+                    <p id="dtrHubSubtext" class="text-[10px] theme-text-muted">Connected to Feeder F-07</p>
+                  </div>
+                </div>
+                <span id="dtrCountBadge" class="text-[11px] font-mono theme-inner px-2 py-0.5 rounded border theme-border theme-text-muted">
+                  3 DTRs
+                </span>
+              </div>
+              <div id="transformersListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 2: INCIDENTS & TICKETS ================= -->
+      <section id="page-incidents" class="space-y-4 hidden">
+        <!-- Top Title & KPI Summary Badges -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b theme-border">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold tracking-tight">TSSPDCL Outage Incident Management</h2>
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-mono">
+                NOC ITIL Triage
+              </span>
+            </div>
+            <p class="text-xs theme-text-muted">
+              Cybercity Circle Operational Outages, Field Gang Work Logs, and Immutable Resolutions
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="px-3 py-1.5 rounded-xl border theme-border theme-card flex items-center gap-2 text-xs font-semibold">
+              <span class="theme-text-muted text-[11px]">Total:</span>
+              <span id="kpiTotalCount" class="font-mono text-cyan-500 font-bold">6</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl border theme-border theme-card flex items-center gap-2 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+              <span class="theme-text-muted text-[11px]">Active:</span>
+              <span id="kpiActiveCount" class="font-mono text-red-500 font-bold">1</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl border theme-border theme-card flex items-center gap-2 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span class="theme-text-muted text-[11px]">In Progress:</span>
+              <span id="kpiInProgressCount" class="font-mono text-amber-500 font-bold">1</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-xl border theme-border theme-card flex items-center gap-2 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="theme-text-muted text-[11px]">Resolved:</span>
+              <span id="kpiResolvedCount" class="font-mono text-emerald-500 font-bold">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="p-3.5 rounded-2xl border theme-border theme-card shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <!-- Status Tabs -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="ticketStatusTabs">
+            <button onclick="setTicketStatusFilter('ALL')" id="tab-status-ALL" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600 text-white shadow-md shadow-cyan-600/30 whitespace-nowrap cursor-pointer">
+              <span>All Incidents</span>
+              <span id="badge-status-ALL" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-700 text-white">6</span>
+            </button>
+            <button onclick="setTicketStatusFilter('ACTIVE')" id="tab-status-ACTIVE" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer">
+              <span>Active &amp; In Progress</span>
+              <span id="badge-status-ACTIVE" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400">2</span>
+            </button>
+            <button onclick="setTicketStatusFilter('OPEN')" id="tab-status-OPEN" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer">
+              <span>Open</span>
+              <span id="badge-status-OPEN" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400">1</span>
+            </button>
+            <button onclick="setTicketStatusFilter('IN_PROGRESS')" id="tab-status-IN_PROGRESS" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer">
+              <span>In Progress</span>
+              <span id="badge-status-IN_PROGRESS" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400">1</span>
+            </button>
+            <button onclick="setTicketStatusFilter('RESOLVED')" id="tab-status-RESOLVED" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer">
+              <span>Resolved</span>
+              <span id="badge-status-RESOLVED" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400">3</span>
+            </button>
+            <button onclick="setTicketStatusFilter('ESCALATED')" id="tab-status-ESCALATED" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer">
+              <span>Escalated</span>
+              <span id="badge-status-ESCALATED" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400">1</span>
+            </button>
+          </div>
+
+          <!-- Dropdowns & Search -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            <select id="priorityFilterSelect" onchange="setTicketPriorityFilter(this.value)" class="theme-input text-xs rounded-xl px-2.5 py-1.5 border theme-border outline-none cursor-pointer">
+              <option value="ALL">All Priorities</option>
+              <option value="P1_CRITICAL">P1 - Critical</option>
+              <option value="P2_HIGH">P2 - High</option>
+              <option value="P3_MEDIUM">P3 - Medium</option>
+            </select>
+
+            <select id="sectionFilterSelect" onchange="setTicketSectionFilter(this.value)" class="theme-input text-xs rounded-xl px-2.5 py-1.5 border theme-border outline-none cursor-pointer">
+              <option value="ALL">All Sections</option>
+              <option value="Madhapur">Madhapur Section</option>
+              <option value="Kondapur">Kondapur Section</option>
+              <option value="Gachibowli">Gachibowli Section</option>
+            </select>
+
+            <div class="relative min-w-[200px]">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input
+                id="incidentSearchInput"
+                type="text"
+                oninput="handleIncidentSearch(this.value)"
+                placeholder="Search Ticket, Asset, USC..."
+                class="w-full theme-input text-xs rounded-xl pl-8 pr-3 py-1.5 border theme-border outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Master-Detail Split Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Left: Incident Master List (5 cols) -->
+          <div class="lg:col-span-5 flex flex-col h-[740px]">
+            <div class="flex items-center justify-between text-xs px-1 theme-text-muted mb-2">
+              <span id="ticketsListHeaderCount">Showing 6 Incidents</span>
+              <button onclick="resetTicketFilters()" class="text-cyan-500 hover:underline cursor-pointer flex items-center gap-1 text-[11px]">
+                <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Filters
+              </button>
+            </div>
+            <div id="ticketsMasterList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+          </div>
+
+          <!-- Right: Selected Incident Deep-Dive View (7 cols) -->
+          <div class="lg:col-span-7 flex flex-col h-[740px]">
+            <div id="selectedTicketContainer" class="theme-card border theme-border rounded-2xl p-5 shadow-xl flex-1 flex flex-col justify-between overflow-y-auto">
+              <!-- Rendered dynamically by renderSelectedTicket() -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 3: FIELD CREWS & DISPATCH ================= -->
+      <section id="page-crews" class="space-y-4 hidden pb-10">
+        <!-- Header & Title -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b theme-border">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold">TSSPDCL Field Technician Dispatch &amp; Crew Fleet</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-500 border border-cyan-500/30">
+                Individual Accountability
+              </span>
+            </div>
+            <p class="text-xs theme-text-muted">
+              Direct Outage Assignment to Specific Linemen &amp; Engineers across Cybercity Circle
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- View Mode Switcher -->
+            <div class="p-1 rounded-xl border theme-border theme-inner flex items-center gap-1 text-xs">
+              <button onclick="setCrewViewMode('GANGS')" id="btnViewGangs" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold bg-cyan-600 text-white shadow-sm cursor-pointer transition-all">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                <span>Section Gangs (3)</span>
+              </button>
+              <button onclick="setCrewViewMode('INDIVIDUALS')" id="btnViewIndividuals" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold theme-text-muted hover:text-cyan-500 cursor-pointer transition-all">
+                <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                <span>Individual Linemen (11)</span>
+              </button>
+            </div>
+
+            <span id="crewStandbyBadge" class="text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1.5 rounded-xl font-mono font-semibold flex items-center gap-1.5">
+              <i data-lucide="radio" class="w-3.5 h-3.5 text-emerald-500 animate-pulse"></i>
+              <span>8 of 11 Linemen Available</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-2xl border theme-border theme-card shadow-sm">
+            <div class="flex items-center justify-between text-xs theme-text-muted mb-1">
+              <span>Section Gangs</span>
+              <i data-lucide="truck" class="w-4 h-4 text-cyan-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono">
+              <span id="kpiTotalGangs">3</span> <span class="text-xs font-normal theme-text-muted">Gangs</span>
+            </div>
+            <span id="kpiGangSplit" class="text-[10px] text-cyan-500 font-semibold block mt-1">2 Standby • 1 Active</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl border theme-border theme-card shadow-sm">
+            <div class="flex items-center justify-between text-xs theme-text-muted mb-1">
+              <span>Linemen on Shift</span>
+              <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-emerald-500" id="kpiLinemenCount">
+              10 / 11
+            </div>
+            <span class="text-[10px] text-emerald-500/80 font-semibold block mt-1" id="kpiLinemenResting">1 Lineman Resting / Standby</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl border theme-border theme-card shadow-sm">
+            <div class="flex items-center justify-between text-xs theme-text-muted mb-1">
+              <span>Dispatched Gangs</span>
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-amber-500">
+              <span id="kpiDispatchedGangs">1</span> <span class="text-xs font-normal theme-text-muted">Responding</span>
+            </div>
+            <span class="text-[10px] text-amber-500/80 font-semibold block mt-1">Priority Faults in Progress</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl border theme-border theme-card shadow-sm">
+            <div class="flex items-center justify-between text-xs theme-text-muted mb-1">
+              <span>Avg Response ETA</span>
+              <i data-lucide="clock" class="w-4 h-4 text-purple-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-purple-500">~ 7.5 mins</div>
+            <span class="text-[10px] text-purple-500/80 font-semibold block mt-1">Under 15m TSSPDCL SLA</span>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="p-3.5 rounded-2xl border theme-border theme-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg">
+          <!-- Status Tabs -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="crewStatusTabs">
+            <button onclick="setCrewStatusFilter('ALL')" id="tab-crew-ALL" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600 text-white shadow-md shadow-cyan-600/30 whitespace-nowrap cursor-pointer">
+              <span>All Gangs</span>
+              <span id="badge-crew-ALL" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-700 text-white">3</span>
+            </button>
+            <button onclick="setCrewStatusFilter('AVAILABLE')" id="tab-crew-AVAILABLE" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-emerald-500 whitespace-nowrap cursor-pointer">
+              <span>Available Gangs</span>
+              <span id="badge-crew-AVAILABLE" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-500">2</span>
+            </button>
+            <button onclick="setCrewStatusFilter('DISPATCHED')" id="tab-crew-DISPATCHED" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-amber-500 whitespace-nowrap cursor-pointer">
+              <span>Dispatched / Active</span>
+              <span id="badge-crew-DISPATCHED" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500">1</span>
+            </button>
+          </div>
+
+          <!-- Section Select & Search Input -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            <select id="crewSectionSelect" onchange="setCrewSectionFilter(this.value)" class="text-xs rounded-xl px-2.5 py-1.5 border theme-border theme-input outline-none cursor-pointer">
+              <option value="ALL">All Sections (Cybercity Circle)</option>
+              <option value="Madhapur">Madhapur Section</option>
+              <option value="Kondapur">Kondapur Section</option>
+              <option value="Gachibowli">Gachibowli Section</option>
+            </select>
+
+            <div class="relative min-w-[220px]">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input
+                id="crewSearchInput"
+                type="text"
+                oninput="handleCrewSearch(this.value)"
+                placeholder="Search Gang, Lineman, Vehicle..."
+                class="w-full text-xs rounded-xl pl-8 pr-3 py-1.5 border theme-border theme-input outline-none"
+              />
+            </div>
+
+            <button onclick="resetCrewFilters()" id="crewResetBtn" class="hidden text-xs text-cyan-500 hover:underline flex items-center gap-1 cursor-pointer">
+              <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Gang Cards Grid -->
+        <div id="crewsGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- ================= PAGE 4: TELEPHONY & CALLS ================= -->
+      <section id="page-calls" class="space-y-4 hidden">
+        <div class="flex items-center justify-between pb-3 border-b theme-border">
+          <div>
+            <h2 class="text-lg font-bold">TSSPDCL 1912 Helpline Desk</h2>
+            <p class="text-xs theme-text-muted">Exotel Telephony Inbound Gate &amp; Conversational Transcription</p>
+          </div>
+          <button onclick="triggerCallSimulation()" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-600/30">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i> Simulate Consumer 1912 Call
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-5 theme-card border theme-border rounded-2xl p-4 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold">Telephony Gate</span>
+              <div id="callStatusBadge">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold theme-inner border theme-border theme-text-muted">READY / IDLE</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 theme-inner p-3 rounded-xl mb-3 border theme-border">
+              <div>
+                <span class="text-[10px] theme-text-muted block uppercase">Caller (Masked)</span>
+                <span id="callerNumberDisplay" class="font-mono text-xs font-bold">+91 98490 23456</span>
+              </div>
+              <div>
+                <span class="text-[10px] theme-text-muted block uppercase">Duration</span>
+                <span id="durationTimer" class="font-mono text-xs font-bold">00:00</span>
+              </div>
+            </div>
+            <div id="audioWaveBox" class="hidden theme-inner p-2.5 rounded-xl border border-cyan-500/30 flex items-center justify-between">
+              <span class="text-[10px] text-cyan-500 flex items-center gap-1 font-semibold">
+                <i data-lucide="mic" class="w-3 h-3 animate-pulse"></i> Live Voice Stream
+              </span>
+              <div class="flex items-center gap-1 h-3">
+                <span class="w-1 bg-cyan-500 rounded-full h-2 animate-pulse"></span>
+                <span class="w-1 bg-cyan-500 rounded-full h-3 animate-pulse"></span>
+                <span class="w-1 bg-cyan-500 rounded-full h-1 animate-pulse"></span>
+                <span class="w-1 bg-cyan-500 rounded-full h-3 animate-pulse"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 theme-card border theme-border rounded-2xl p-4 shadow-xl flex flex-col h-[400px]">
+            <span class="text-xs font-bold mb-2 pb-2 border-b theme-border">Live Voice Transcript (Telugu / English)</span>
+            <div id="transcriptContainer" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <div class="text-center py-12 theme-text-muted text-xs">Awaiting consumer call...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 5: GEMINI AI DIAGNOSIS ================= -->
+      <section id="page-diagnosis" class="space-y-4 hidden">
+        <div class="flex items-center justify-between pb-3 border-b theme-border">
+          <div>
+            <h2 class="text-lg font-bold">Gemini Bounded Outage Diagnosis Engine</h2>
+            <p class="text-xs theme-text-muted">Strict Evidence Verification Against TSSPDCL Cybercity SCADA</p>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-semibold">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Zero Hallucination Guard
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-8 theme-card border theme-border rounded-2xl p-4 shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b theme-border">
+              <span class="text-xs font-bold">Ranked Hypotheses</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">GROUNDED</span>
+            </div>
+            <div class="theme-inner p-3 rounded-xl border theme-border">
+              <div class="flex items-center justify-between mb-1.5">
+                <span id="hypoTitle" class="text-xs font-bold">TSSPDCL 11kV Feeder F-07 Overcurrent Lockout</span>
+                <span id="hypoScore" class="text-[11px] font-mono font-bold text-purple-500">96% Confidence</span>
+              </div>
+              <p id="hypoExplanation" class="text-xs theme-text-muted leading-relaxed mb-2.5">
+                11kV Vacuum Circuit Breaker VCB-07 at Madhapur 33/11kV Substation tripped on Earth Fault relay indication (51N).
+              </p>
+              <div id="evidenceBadges" class="flex items-center flex-wrap gap-1.5"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div class="theme-inner p-3 rounded-xl border theme-border">
+                <span class="text-[10px] uppercase font-semibold text-cyan-500 block mb-1">Customer Summary</span>
+                <p id="custSummary" class="text-xs theme-text-muted">11kV distribution line trip detected affecting Ayyappa Society &amp; Kavuri Hills.</p>
+              </div>
+              <div class="theme-inner p-3 rounded-xl border theme-border">
+                <span class="text-[10px] uppercase font-semibold text-amber-500 block mb-1">Operator Brief</span>
+                <p id="operSummary" class="text-xs theme-text-muted">VCB-07 lockout at Madhapur 33/11kV Substation. Total 740 meters offline.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-4 theme-card border theme-border rounded-2xl p-4 shadow-xl">
+            <span class="text-xs font-bold block mb-2">Verified Telemetry Contracts</span>
+            <ul class="space-y-2 text-xs font-mono">
+              <li class="p-2 rounded-lg theme-inner border theme-border flex justify-between">
+                <span>EVID-SS-MDP-VCB07-TRIP</span>
+                <span class="text-emerald-500 text-[10px] font-bold">VERIFIED</span>
+              </li>
+              <li class="p-2 rounded-lg theme-inner border theme-border flex justify-between">
+                <span>EVID-DTR101-ZERO-VOLT</span>
+                <span class="text-emerald-500 text-[10px] font-bold">VERIFIED</span>
+              </li>
+              <li class="p-2 rounded-lg theme-inner border theme-border flex justify-between">
+                <span>EVID-DTR102-ZERO-VOLT</span>
+                <span class="text-emerald-500 text-[10px] font-bold">VERIFIED</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Resolution Modal -->
+  <div id="resolveModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="theme-card border theme-border rounded-2xl p-5 max-w-lg w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i>
+          <span>Mark Outage Incident Resolved</span>
+        </h3>
+        <button onclick="closeResolveModal()" class="theme-text-muted hover:text-cyan-500 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs theme-text-muted mb-3">
+        Record official TSSPDCL resolution category and lineman remarks. Connected grid assets will restore to healthy status across the operations map.
+      </p>
+
+      <div class="mb-3 space-y-1">
+        <label class="text-[11px] font-semibold theme-text-muted block">Resolution Category:</label>
+        <select id="modalCategorySelect" class="w-full theme-input border theme-border rounded-xl p-2 text-xs outline-none cursor-pointer">
+          <option value="11kV Line Patrol & Vegetation Clearance">11kV Line Patrol &amp; Vegetation Clearance (Tree branch removed)</option>
+          <option value="Transformer 11kV HG Fuse Replaced">Transformer 11kV HG/DO Fuse Replaced &amp; Tested</option>
+          <option value="11kV Line Jumper Re-crimped & Insulator Cleaned">11kV Line Jumper Re-crimped &amp; Insulator Cleaned</option>
+          <option value="Neutral Earthing Pit Reconditioned">Neutral Earthing Pit Reconditioned &amp; Clamped</option>
+          <option value="Underground XLPE Cable Fault Jointing">Underground XLPE Cable Fault Jointing &amp; Meggered</option>
+          <option value="Vacuum Circuit Breaker Recharged">Substation Vacuum Circuit Breaker (VCB) Recharged</option>
+        </select>
+      </div>
+
+      <div class="mb-4 space-y-1">
+        <label class="text-[11px] font-semibold theme-text-muted block">Lineman / Operator Remarks:</label>
+        <textarea id="modalReasonInput" rows="3" class="w-full theme-input border theme-border rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-emerald-500">Madhapur Section patrol completed. Tree branch cleared from 11kV Feeder F-07. VCB-07 recharged at Madhapur 33kV Substation.</textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeResolveModal()" class="px-3 py-1.5 rounded-lg theme-inner border theme-border text-xs cursor-pointer">Cancel</button>
+        <button onclick="confirmResolution()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer shadow-md shadow-emerald-600/30">Confirm Resolution &amp; Re-energize</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Field Technician Modal -->
+  <div id="assignGangModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="theme-card border theme-border rounded-2xl p-5 max-w-lg w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+          <i data-lucide="user-check" class="w-5 h-5 text-cyan-500"></i>
+          <span id="assignModalTitle">Dispatch Field Technician to Incident</span>
+        </h3>
+        <button onclick="closeAssignGangModal()" class="theme-text-muted hover:text-cyan-500 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs theme-text-muted mb-3">
+        Select an available TSSPDCL lineman or engineer to take personal charge of this outage:
+      </p>
+
+      <div id="gangSelectionList" class="space-y-2 mb-4 max-h-72 overflow-y-auto pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="flex justify-end">
+        <button onclick="closeAssignGangModal()" class="px-3 py-1.5 rounded-lg theme-inner border theme-border text-xs cursor-pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Engine -->
+  <script>
+    // TSSPDCL Hyderabad Data
+    const HUBS = [
+      {
+        id: 'hub-07',
+        code: 'HUB-F07-HITEC',
+        name: 'Cyber Towers & Ayyappa Society Hub',
+        locality: 'Madhapur Section, TSSPDCL',
+        feederCode: 'F-07-CYBER',
+        meters: 740,
+        status: 'DOWN',
+        coords: [78.3820, 17.4465],
+        transformers: [
+          { id: 'dtr-mdp-101', code: 'DTR-MDP-101', name: '100kVA DTR Kavuri Hills Phase 1', state: 'DOWN', capacity: 100, voltage: '415V/240V', consumers: 180, telemetry: 'Zero Secondary Voltage', coords: [78.3860, 17.4425] },
+          { id: 'dtr-mdp-102', code: 'DTR-MDP-102', name: '250kVA DTR Ayyappa Society Main Rd', state: 'DOWN', capacity: 250, voltage: '415V/240V', consumers: 320, telemetry: 'LT Breaker Open', coords: [78.3820, 17.4465] },
+          { id: 'dtr-mdp-103', code: 'DTR-MDP-103', name: '160kVA DTR Madhapur 100ft Road', state: 'DOWN', capacity: 160, voltage: '415V/240V', consumers: 240, telemetry: 'Zero Secondary Voltage', coords: [78.3910, 17.4485] }
+        ]
+      },
+      {
+        id: 'hub-03',
+        code: 'HUB-F03-KONDAPUR',
+        name: 'Kondapur & Botanical Garden Hub',
+        locality: 'Kondapur Section, TSSPDCL',
+        feederCode: 'F-03-KNDPR',
+        meters: 430,
+        status: 'HEALTHY',
+        coords: [78.3650, 17.4620],
+        transformers: [
+          { id: 'dtr-knd-201', code: 'DTR-KND-201', name: '250kVA DTR Kondapur RTO Circle', state: 'HEALTHY', capacity: 250, voltage: '415V/240V', consumers: 0, telemetry: 'Nominal (241V)', coords: [78.3650, 17.4640] },
+          { id: 'dtr-knd-202', code: 'DTR-KND-202', name: '100kVA DTR Botanical Garden Road', state: 'HEALTHY', capacity: 100, voltage: '415V/240V', consumers: 0, telemetry: 'Nominal (239V)', coords: [78.3620, 17.4580] }
+        ]
+      },
+      {
+        id: 'hub-12',
+        code: 'HUB-F12-GACHIBOWLI',
+        name: 'Gachibowli Financial District Hub',
+        locality: 'Gachibowli Section, TSSPDCL',
+        feederCode: 'F-12-FIN',
+        meters: 650,
+        status: 'HEALTHY',
+        coords: [78.3550, 17.4350],
+        transformers: [
+          { id: 'dtr-gcb-301', code: 'DTR-GCB-301', name: '500kVA DTR Financial District Park', state: 'HEALTHY', capacity: 500, voltage: '415V/240V', consumers: 0, telemetry: 'Nominal (242V)', coords: [78.3520, 17.4320] }
+        ]
+      }
+    ];
+
+    const CREWS = [
+      {
+        id: 'crew-01',
+        name: 'TSSPDCL Emergency Gang (Madhapur Section)',
+        shortName: 'Madhapur Sky-lift Gang',
+        office: 'AE / Operation / Madhapur (Cybercity Circle)',
+        lead: 'K. Srinivas Reddy (AE / Op)',
+        leadPhone: '+91 94906 18201',
+        specialization: 'HIGH_VOLTAGE_11KV',
+        specializationLabel: '11kV Overhead Lines & Tree Trimming',
+        vehicle: 'Hydraulic Sky-lift TS-09-EA-4412',
+        vehicleType: 'Hydraulic Sky-lift Truck (18m Reach)',
+        status: 'DISPATCHED',
+        location: 'Ayyappa Society, Madhapur (En Route)',
+        baseDepot: 'Madhapur 33/11kV Substation Yard',
+        coords: [78.3790, 17.4490],
+        speedKmph: 32,
+        eta: 6,
+        assignedIncidentId: 'tkt-001',
+        assignedTicketNumber: 'TSSPDCL-HYD-00412',
+        assignedTaskDescription: 'Outage on 11kV Feeder F-07 affecting Ayyappa Society & Kavuri Hills',
+        assignedAt: 'Today, 18:52 IST',
+        phone: '+91 94906 18201',
+        members: [
+          { id: 'tech-mdp-1', name: 'K. Srinivas Reddy', role: 'AE / Operation (Lead)', phone: '+91 94906 18201', status: 'AVAILABLE', experience: '15 yrs • 33/11kV Switching In-charge', avatarInitials: 'SR', squad: 'Madhapur Emergency Gang', vehicle: 'TS-09-EA-4412', office: 'Madhapur Section' },
+          { id: 'tech-mdp-2', name: 'K. Ramulu', role: 'Senior Lineman', phone: '+91 94408 12301', status: 'ASSIGNED', assignedTicketId: 'tkt-001', assignedTicketNumber: 'TSSPDCL-HYD-00412', assignedTaskDescription: 'Outage on 11kV Feeder F-07 affecting Ayyappa Society & Kavuri Hills', assignedAt: 'Today, 18:52 IST', experience: '12 yrs • Live-line Glove & Hotstick Certified', avatarInitials: 'KR', squad: 'Madhapur Emergency Gang', vehicle: 'TS-09-EA-4412', office: 'Madhapur Section' },
+          { id: 'tech-mdp-3', name: 'B. Venkat', role: 'Assistant Lineman (ALM)', phone: '+91 94408 12302', status: 'AVAILABLE', experience: '6 yrs • Overhead Line Climbing & Earthing', avatarInitials: 'BV', squad: 'Madhapur Emergency Gang', vehicle: 'TS-09-EA-4412', office: 'Madhapur Section' },
+          { id: 'tech-mdp-4', name: 'G. Ravi', role: 'Sky-lift Hydraulic Operator', phone: '+91 94408 12303', status: 'AVAILABLE', experience: '8 yrs • Aerial Platform & Traffic Safety', avatarInitials: 'GR', squad: 'Madhapur Emergency Gang', vehicle: 'TS-09-EA-4412', office: 'Madhapur Section' }
+        ],
+        closestTicket: {
+          ticketId: 'tkt-001',
+          ticketNumber: 'TSSPDCL-HYD-00412',
+          priority: 'P1_CRITICAL',
+          locality: 'Ayyappa Society, Madhapur',
+          primaryAssetCode: 'F-07-CYBER',
+          summary: 'Outage on 11kV Feeder F-07 affecting Ayyappa Society & Kavuri Hills',
+          distanceKm: 0.8,
+          etaMinutes: 6
+        }
+      },
+      {
+        id: 'crew-02',
+        name: 'TSSPDCL DTR Breakdown Squad (Kondapur Section)',
+        shortName: 'Kondapur DTR Crane Squad',
+        office: 'Sub-Engineer / Operation / Kondapur',
+        lead: 'M. Venkat Rao (Sub-Engineer)',
+        leadPhone: '+91 94906 18202',
+        specialization: 'TRANSFORMER_DTR_BREAKDOWN',
+        specializationLabel: 'DTR Replacement & Bushing Testing',
+        vehicle: 'Heavy Mobile Crane TS-09-UA-8831',
+        vehicleType: 'Heavy Mobile Crane Truck (10-Ton Bed)',
+        status: 'AVAILABLE',
+        location: 'Kondapur RTO Circle Section Depot',
+        baseDepot: 'Kondapur RTO Section Depot',
+        coords: [78.3650, 17.4640],
+        speedKmph: 0,
+        eta: 12,
+        phone: '+91 94906 18202',
+        members: [
+          { id: 'tech-knd-1', name: 'M. Venkat Rao', role: 'Sub-Engineer (Lead)', phone: '+91 94906 18202', status: 'AVAILABLE', experience: '14 yrs • DTR Megger & Oil BDV Testing', avatarInitials: 'VR', squad: 'Kondapur DTR Breakdown Squad', vehicle: 'TS-09-UA-8831', office: 'Kondapur Section' },
+          { id: 'tech-knd-2', name: 'P. Naresh', role: 'Senior Lineman', phone: '+91 94408 22301', status: 'AVAILABLE', experience: '10 yrs • HT/LT Bushing & HG Fuse Specialist', avatarInitials: 'PN', squad: 'Kondapur DTR Breakdown Squad', vehicle: 'TS-09-UA-8831', office: 'Kondapur Section' },
+          { id: 'tech-knd-3', name: 'S. Ramesh', role: 'Junior Lineman', phone: '+91 94408 22302', status: 'AVAILABLE', experience: '4 yrs • Neutral Earthing Pit & Clamping', avatarInitials: 'SR', squad: 'Kondapur DTR Breakdown Squad', vehicle: 'TS-09-UA-8831', office: 'Kondapur Section' },
+          { id: 'tech-knd-4', name: 'T. Krishna', role: 'Crane & Rigging Operator', phone: '+91 94408 22303', status: 'RESTING', experience: '9 yrs • Heavy Rigging (Standby at depot)', avatarInitials: 'TK', squad: 'Kondapur DTR Breakdown Squad', vehicle: 'TS-09-UA-8831', office: 'Kondapur Section' }
+        ],
+        closestTicket: {
+          ticketId: 'tkt-003',
+          ticketNumber: 'TSSPDCL-HYD-00414',
+          priority: 'P3_MEDIUM',
+          locality: 'Cyber Towers vicinity, Madhapur',
+          primaryAssetCode: 'UNASSIGNED',
+          summary: 'Ambiguous location report - requires operator pin verification',
+          distanceKm: 2.1,
+          etaMinutes: 12
+        }
+      },
+      {
+        id: 'crew-03',
+        name: 'TSSPDCL Fuse-Off Call Gang (Gachibowli Section)',
+        shortName: 'Gachibowli Fuse-Off Squad',
+        office: 'Lineman / Operation / Gachibowli',
+        lead: 'Y. Yadagiri (Lead Lineman)',
+        leadPhone: '+91 94906 18203',
+        specialization: 'FUSE_OFF_CALL',
+        specializationLabel: 'LT Fuse-Off Calls & Cable Punctures',
+        vehicle: 'Patrol 4x4 Bolero TS-09-GA-1102',
+        vehicleType: 'Rapid Response 4x4 Bolero Utility Van',
+        status: 'DISPATCHED',
+        location: 'Financial District Wipro Circle (En Route to Waverock)',
+        baseDepot: 'Gachibowli Stadium Substation Depot',
+        coords: [78.3550, 17.4350],
+        speedKmph: 36,
+        eta: 5,
+        assignedIncidentId: 'tkt-002',
+        assignedTicketNumber: 'TSSPDCL-HYD-00418',
+        assignedTaskDescription: 'Investigating phase drop & neutral voltage shift on DTR-GCB-301 secondary bus',
+        assignedAt: 'Today, 17:22 IST',
+        phone: '+91 94906 18203',
+        members: [
+          { id: 'tech-gcb-1', name: 'Y. Yadagiri', role: 'Lead Lineman (FOC In-charge)', phone: '+91 94906 18203', status: 'ASSIGNED', assignedTicketId: 'tkt-002', assignedTicketNumber: 'TSSPDCL-HYD-00418', assignedTaskDescription: 'Investigating phase drop & neutral voltage shift on DTR-GCB-301 secondary bus', assignedAt: 'Today, 17:22 IST', experience: '11 yrs • 415V Phase Balancing & LT Fuses', avatarInitials: 'YY', squad: 'Gachibowli Fuse-Off Squad', vehicle: 'TS-09-GA-1102', office: 'Gachibowli Section' },
+          { id: 'tech-gcb-2', name: 'Ch. Suresh', role: 'Lineman Assistant', phone: '+91 94408 33301', status: 'ASSIGNED', assignedTicketId: 'tkt-002', assignedTicketNumber: 'TSSPDCL-HYD-00418', assignedTaskDescription: 'Investigating phase drop & neutral voltage shift on DTR-GCB-301 secondary bus', assignedAt: 'Today, 17:22 IST', experience: '5 yrs • Consumer Meter & Service Drop Specialist', avatarInitials: 'CS', squad: 'Gachibowli Fuse-Off Squad', vehicle: 'TS-09-GA-1102', office: 'Gachibowli Section' },
+          { id: 'tech-gcb-3', name: 'A. Kumar', role: 'Patrol Driver & Field Tech', phone: '+91 94408 33302', status: 'AVAILABLE', experience: '7 yrs • Emergency Response Navigation', avatarInitials: 'AK', squad: 'Gachibowli Fuse-Off Squad', vehicle: 'TS-09-GA-1102', office: 'Gachibowli Section' }
+        ],
+        closestTicket: {
+          ticketId: 'tkt-006',
+          ticketNumber: 'TSSPDCL-HYD-00422',
+          priority: 'P1_CRITICAL',
+          locality: 'Financial District, Gachibowli',
+          primaryAssetCode: 'F-12-FIN',
+          summary: 'Underground 11kV XLPE cable fault between Substation and Waverock Junction',
+          distanceKm: 1.4,
+          etaMinutes: 8
+        }
+      }
+    ];
+
+    const SCENARIOS = {
+      feeder_fault: {
+        hubId: 'hub-07',
+        callerNumber: '+91 98490 23456',
+        locality: 'Ayyappa Society, Madhapur',
+        ticketNumber: 'TSSPDCL-HYD-00412',
+        priority: 'P1_CRITICAL',
+        summary: 'Outage on 11kV Feeder F-07 affecting Ayyappa Society & Kavuri Hills',
+        recipientContact: '+91 98490 23456',
+        hypo: {
+          title: 'TSSPDCL 11kV Feeder F-07 Overcurrent Lockout',
+          score: '96% Confidence',
+          desc: 'VCB-07 tripped on Earth Fault at Madhapur 33/11kV Substation. DTR-MDP-101, 102, 103 report zero incoming voltage.',
+          evidence: ['EVID-SS-MDP-VCB07-TRIP', 'EVID-DTR101-ZERO-VOLT', 'EVID-DTR102-ZERO-VOLT']
+        },
+        transcript: [
+          { speaker: 'AI_AGENT', text: 'Namaskaram, TSSPDCL 1912 Care. Please state your USC number and location.', time: '18:42:01' },
+          { speaker: 'CALLER', text: 'Hello, Venkatesh from Plot 42, Ayyappa Society, Madhapur. Whole lane has no power.', time: '18:42:07' },
+          { speaker: 'SYSTEM', text: 'Mapped: USC 1104-58293 -> DTR-MDP-102 -> Feeder F-07 -> Madhapur 33kV Substation.', time: '18:42:15' }
+        ]
+      },
+      transformer_failure: {
+        hubId: 'hub-07',
+        callerNumber: '+91 98490 55441',
+        locality: 'Ayyappa Society, Madhapur',
+        ticketNumber: 'TSSPDCL-HYD-00413',
+        priority: 'P2_HIGH',
+        summary: 'DTR-MDP-102 breakdown near Ayyappa Society Main Road',
+        recipientContact: '+91 98490 55441',
+        hypo: {
+          title: '250kVA DTR Internal Flashover / DO Fuse Blown',
+          score: '98% Confidence',
+          desc: 'Acoustic explosion report combined with zero secondary voltage on DTR-MDP-102 while Feeder F-07 is energized.',
+          evidence: ['EVID-DTR102-BURST', 'EVID-F07-VOLT-NORMAL']
+        },
+        transcript: [
+          { speaker: 'AI_AGENT', text: 'TSSPDCL 1912 Customer Desk. How can we help you?', time: '19:10:02' },
+          { speaker: 'CALLER', text: 'Loud blast and sparks on transformer pole near Ayyappa Society 2nd Cross.', time: '19:10:11' },
+          { speaker: 'SYSTEM', text: 'DTR-MDP-102 isolated fault. Feeder F-07 healthy.', time: '19:10:19' }
+        ]
+      },
+      ambiguous_incident: {
+        hubId: 'hub-07',
+        callerNumber: '+91 98490 77119',
+        locality: 'Cyber Towers vicinity',
+        ticketNumber: 'TSSPDCL-HYD-00414',
+        priority: 'P3_MEDIUM',
+        summary: 'Ambiguous location report - requires operator pin verification',
+        recipientContact: '+91 98490 77119',
+        hypo: {
+          title: 'Unverified Consumer Premise',
+          score: '28% Low Confidence',
+          desc: 'Multiple commercial bakeries detected across Madhapur and Kondapur sections.',
+          evidence: ['EVID-LOC-AMBIGUOUS']
+        },
+        transcript: [
+          { speaker: 'AI_AGENT', text: 'TSSPDCL 1912 Desk. Please provide your USC number or address.', time: '19:35:10' },
+          { speaker: 'CALLER', text: 'Power cut near the bakery by Cyber Towers signal road.', time: '19:35:16' }
+        ]
+      },
+      noisy_telemetry: {
+        hubId: 'hub-03',
+        callerNumber: '+91 98490 88223',
+        locality: 'Kondapur RTO Circle',
+        ticketNumber: 'TSSPDCL-HYD-00415',
+        priority: 'P3_MEDIUM',
+        summary: 'Voltage fluctuation report - power quality investigation required',
+        recipientContact: '+91 98490 88223',
+        hypo: {
+          title: 'Voltage Instability / Neutral Imbalance on DTR-KND-201',
+          score: '42% Insufficient Evidence',
+          desc: 'Telemetry oscillating (180V - 250V). Model avoids guessing electrical root cause without physical measurement.',
+          evidence: ['EVID-DTR201-VOLT-OSC', 'EVID-PACKET-LOSS-22PCT']
+        },
+        transcript: [
+          { speaker: 'AI_AGENT', text: 'TSSPDCL 1912 Care. How may we assist you?', time: '20:05:01' },
+          { speaker: 'CALLER', text: 'Lights dimming and computers restarting in Vasavi Residency, Kondapur.', time: '20:05:08' }
+        ]
+      }
+    };
+
+    const TICKETS = [
+      {
+        id: 'tkt-001',
+        ticketNumber: 'TSSPDCL-HYD-00412',
+        serviceConnectionNo: '1104-58293',
+        locality: 'Ayyappa Society, Madhapur',
+        substationName: 'Madhapur 33/11kV Substation',
+        sectionOffice: 'Madhapur Section',
+        primaryAssetCode: 'F-07-CYBER',
+        priority: 'P1_CRITICAL',
+        status: 'OPEN',
+        summary: 'Outage on 11kV Feeder F-07 affecting Ayyappa Society & Kavuri Hills',
+        acknowledgementChannel: 'SMS / EMAIL',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 23456',
+        createdAt: 'Today, 18:42:22 IST',
+        resolvedAt: null,
+        durationText: null,
+        resolutionCategory: null,
+        resolutionReason: null,
+        allocatedTechnicianId: 'tech-mdp-2',
+        assignedTechnicianName: 'K. Ramulu',
+        assignedTechnicianRole: 'Senior Lineman',
+        assignedTechnicianPhone: '+91 94408 12301',
+        allocatedCrewId: 'crew-01',
+        assignedCrewName: 'TSSPDCL Emergency Gang (Madhapur)',
+        assignedCrewLead: 'K. Srinivas Reddy (AE / Op)',
+        assignedCrewVehicle: 'Hydraulic Sky-lift TS-09-EA-4412',
+        assignedCrewPhone: '+91 94906 18201',
+        assignedOperatorName: 'Operator Ramesh Varma (ID: OP-842)',
+        consumersAffected: 740,
+        comments: [
+          {
+            id: 'c-1',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: 'Telemetry verification confirmed: VCB-07 relay trip 51N (Earth Fault) at Madhapur 33kV Substation. 740 consumer meters lost heartbeat.',
+            timestamp: '18:42:22 IST'
+          },
+          {
+            id: 'c-2',
+            author: 'Operator Ramesh Varma',
+            role: 'OPERATOR',
+            content: 'Broadcast outage SMS notification sent to 740 consumers in Ayyappa Society & Kavuri Hills. Alerted Madhapur Section AE.',
+            timestamp: '18:45:10 IST'
+          },
+          {
+            id: 'c-3',
+            author: 'K. Srinivas Reddy (AE / Op)',
+            role: 'FIELD_CREW',
+            content: 'Madhapur Emergency Gang dispatched with Sky-lift TS-09-EA-4412. En route along 100ft road to isolate Gang Operated (GO) switch.',
+            timestamp: '18:52:40 IST'
+          }
+        ]
+      },
+      {
+        id: 'tkt-002',
+        ticketNumber: 'TSSPDCL-HYD-00418',
+        serviceConnectionNo: '1109-33821',
+        locality: 'Financial District, Gachibowli',
+        substationName: 'Gachibowli 33/11kV Substation',
+        sectionOffice: 'Gachibowli Section',
+        primaryAssetCode: 'DTR-GCB-301',
+        priority: 'P2_HIGH',
+        status: 'IN_PROGRESS',
+        summary: 'Phase drop & severe under-voltage on DTR-GCB-301 near Waverock IT Park',
+        acknowledgementChannel: 'SMS',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 66782',
+        createdAt: 'Today, 17:15:05 IST',
+        resolvedAt: null,
+        durationText: 'Active: 45m',
+        resolutionCategory: null,
+        resolutionReason: null,
+        allocatedTechnicianId: 'tech-gcb-1',
+        assignedTechnicianName: 'Y. Yadagiri',
+        assignedTechnicianRole: 'Lead Lineman (FOC In-charge)',
+        assignedTechnicianPhone: '+91 94906 18203',
+        allocatedCrewId: 'crew-03',
+        assignedCrewName: 'TSSPDCL Fuse-Off Call Gang (Gachibowli)',
+        assignedCrewLead: 'Y. Yadagiri (Lead Lineman)',
+        assignedCrewVehicle: 'Patrol 4x4 Bolero TS-09-GA-1102',
+        assignedCrewPhone: '+91 94906 18203',
+        assignedOperatorName: 'Operator Suresh Kumar (ID: OP-811)',
+        consumersAffected: 140,
+        comments: [
+          {
+            id: 'c-201',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: 'Smart meter alert: Neutral-to-Earth voltage spike (>18V) and B-phase voltage drop to 175V detected on DTR-GCB-301 secondary bus.',
+            timestamp: '17:15:05 IST'
+          },
+          {
+            id: 'c-202',
+            author: 'Operator Suresh Kumar',
+            role: 'OPERATOR',
+            content: 'Assigned Gachibowli Fuse-Off Gang to inspect distribution box and check for loose LT neutral terminal.',
+            timestamp: '17:22:30 IST'
+          },
+          {
+            id: 'c-203',
+            author: 'Y. Yadagiri (Lead Lineman)',
+            role: 'FIELD_CREW',
+            content: 'Crew on site at Waverock sub-station enclosure. LT fuse box opened; discovered overheated B-phase HRC fuse base.',
+            timestamp: '17:45:12 IST'
+          }
+        ]
+      },
+      {
+        id: 'tkt-003',
+        ticketNumber: 'TSSPDCL-HYD-00408',
+        serviceConnectionNo: '1104-58294',
+        locality: 'Ayyappa Society Main Road, Madhapur',
+        substationName: 'Madhapur 33/11kV Substation',
+        sectionOffice: 'Madhapur Section',
+        primaryAssetCode: 'DTR-MDP-102',
+        priority: 'P1_CRITICAL',
+        status: 'RESOLVED',
+        summary: '250kVA DTR-MDP-102 Lightning flashover & blown 11kV Horn Gap fuse',
+        acknowledgementChannel: 'SMS / PORTAL',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 55441',
+        createdAt: 'Today, 15:10:18 IST',
+        resolvedAt: 'Today, 16:35:40 IST',
+        durationText: '1h 25m',
+        resolutionCategory: 'Transformer 11kV HG Fuse Replaced',
+        resolutionReason: 'Replaced blown 11kV Horn Gap (HG) fuse unit on DTR-MDP-102. Cleared tree branch carbon residue and restored load. Secondary voltage normalized at 415V/230V.',
+        allocatedTechnicianId: 'tech-knd-2',
+        assignedTechnicianName: 'P. Naresh',
+        assignedTechnicianRole: 'Senior Lineman',
+        assignedTechnicianPhone: '+91 94408 22301',
+        allocatedCrewId: 'crew-02',
+        assignedCrewName: 'TSSPDCL DTR Breakdown Gang (Kondapur)',
+        assignedCrewLead: 'M. Venkat Rao (Sub-Eng)',
+        assignedCrewVehicle: 'Heavy Crane Van TS-09-UA-8831',
+        assignedCrewPhone: '+91 94906 18202',
+        assignedOperatorName: 'Operator Anita Devi (ID: OP-790)',
+        consumersAffected: 320,
+        comments: [
+          {
+            id: 'c-301',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: '1912 Call from USC 1104-58294 reporting blast on transformer pole near Ayyappa Society 2nd Cross. Acoustic blast report verified against zero voltage on DTR-MDP-102.',
+            timestamp: '15:10:18 IST'
+          },
+          {
+            id: 'c-302',
+            author: 'Operator Anita Devi',
+            role: 'OPERATOR',
+            content: 'Dispatched Kondapur Breakdown Gang with Crane Van TS-09-UA-8831. Issued Line Clear permit (LC) for local DTR isolation.',
+            timestamp: '15:16:00 IST'
+          },
+          {
+            id: 'c-303',
+            author: 'M. Venkat Rao (Sub-Eng)',
+            role: 'FIELD_CREW',
+            content: 'Crew on site. Identified blown HG fuse on Y-phase due to moisture flashover. Bushings tested sound with 2.5kV Megger (>100M Ohm).',
+            timestamp: '15:52:14 IST'
+          },
+          {
+            id: 'c-304',
+            author: 'M. Venkat Rao (Sub-Eng)',
+            role: 'FIELD_CREW',
+            content: 'New 11kV HG fuse elements fitted. Transformer charged on no-load; 415V three-phase verified. LT circuit breaker closed.',
+            timestamp: '16:31:05 IST'
+          },
+          {
+            id: 'c-305',
+            author: 'Operator Anita Devi',
+            role: 'OPERATOR',
+            content: 'Ticket verified and marked RESOLVED. Automated restoration SMS sent to 320 consumers.',
+            timestamp: '16:35:40 IST'
+          }
+        ]
+      },
+      {
+        id: 'tkt-004',
+        ticketNumber: 'TSSPDCL-HYD-00395',
+        serviceConnectionNo: '1107-12948',
+        locality: 'Kondapur RTO Circle, Hyderabad',
+        substationName: 'Kondapur 33/11kV Substation',
+        sectionOffice: 'Kondapur Section',
+        primaryAssetCode: 'F-03-KNDPR',
+        priority: 'P2_HIGH',
+        status: 'RESOLVED',
+        summary: '11kV Kondapur Main Feeder sparks and loose PG clamp jumper near RTA Office',
+        acknowledgementChannel: 'SMS',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 88223',
+        createdAt: 'Yesterday, 21:05:12 IST',
+        resolvedAt: 'Yesterday, 22:20:45 IST',
+        durationText: '1h 15m',
+        resolutionCategory: '11kV Line Jumper Re-crimped & Insulator Cleaned',
+        resolutionReason: 'Tightened loose Parallel Groove (PG) clamp jumper on pole #KP-14 near Kondapur RTA Office. Cleaned carbonized pin insulator surface. 11kV line recharged successfully.',
+        allocatedTechnicianId: 'tech-knd-3',
+        assignedTechnicianName: 'S. Ramesh',
+        assignedTechnicianRole: 'Junior Lineman',
+        assignedTechnicianPhone: '+91 94408 22302',
+        allocatedCrewId: 'crew-02',
+        assignedCrewName: 'TSSPDCL DTR Breakdown Gang (Kondapur)',
+        assignedCrewLead: 'M. Venkat Rao (Sub-Eng)',
+        assignedCrewVehicle: 'Heavy Crane Van TS-09-UA-8831',
+        assignedCrewPhone: '+91 94906 18202',
+        assignedOperatorName: 'Operator Ramesh Varma (ID: OP-842)',
+        consumersAffected: 510,
+        comments: [
+          {
+            id: 'c-401',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: 'Multiple 1912 complaints logged regarding sparks on pole top near Kondapur RTA. Feeder F-03 current imbalance 45 Amps.',
+            timestamp: 'Yesterday, 21:05:12 IST'
+          },
+          {
+            id: 'c-402',
+            author: 'Operator Ramesh Varma',
+            role: 'OPERATOR',
+            content: 'Section isolated via Air Break switch at Botanical Garden junction. Dispatched Kondapur gang.',
+            timestamp: 'Yesterday, 21:12:00 IST'
+          },
+          {
+            id: 'c-403',
+            author: 'M. Venkat Rao (Sub-Eng)',
+            role: 'FIELD_CREW',
+            content: 'Sky-lift deployed. Jumper recrimped with heavy-duty PG clamp. Pin insulator de-greased.',
+            timestamp: 'Yesterday, 22:15:30 IST'
+          },
+          {
+            id: 'c-404',
+            author: 'Operator Ramesh Varma',
+            role: 'OPERATOR',
+            content: 'Feeder recharged. Load normal across R, Y, B phases. Ticket marked RESOLVED.',
+            timestamp: 'Yesterday, 22:20:45 IST'
+          }
+        ]
+      },
+      {
+        id: 'tkt-005',
+        ticketNumber: 'TSSPDCL-HYD-00401',
+        serviceConnectionNo: '1104-44190',
+        locality: 'Silicon Valley, Madhapur',
+        substationName: 'Madhapur 33/11kV Substation',
+        sectionOffice: 'Madhapur Section',
+        primaryAssetCode: 'DTR-MDP-101',
+        priority: 'P3_MEDIUM',
+        status: 'RESOLVED',
+        summary: '3-Phase low voltage & neutral shift on 100kVA DTR-MDP-101',
+        acknowledgementChannel: 'SMS',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 11982',
+        createdAt: 'Yesterday, 14:30:00 IST',
+        resolvedAt: 'Yesterday, 15:45:10 IST',
+        durationText: '1h 15m',
+        resolutionCategory: 'Neutral Earthing Pit Reconditioned',
+        resolutionReason: 'Re-watered transformer earthing pit with saline-charcoal solution and tightened copper neutral bus terminal. Neutral voltage to ground restored to <2V.',
+        allocatedTechnicianId: null,
+        assignedTechnicianName: null,
+        assignedTechnicianRole: null,
+        assignedTechnicianPhone: null,
+        allocatedCrewId: 'crew-01',
+        assignedCrewName: 'TSSPDCL Emergency Gang (Madhapur)',
+        assignedCrewLead: 'K. Srinivas Reddy (AE / Op)',
+        assignedCrewVehicle: 'Hydraulic Sky-lift TS-09-EA-4412',
+        assignedCrewPhone: '+91 94906 18201',
+        assignedOperatorName: 'Operator Suresh Kumar (ID: OP-811)',
+        consumersAffected: 85,
+        comments: [
+          {
+            id: 'c-501',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: 'Consumer reported flickering LED lights and domestic UPS continuously switching to battery mode. Neutral shift indicated.',
+            timestamp: 'Yesterday, 14:30:00 IST'
+          },
+          {
+            id: 'c-502',
+            author: 'K. Srinivas Reddy (AE / Op)',
+            role: 'FIELD_CREW',
+            content: 'Earth resistance measured at 8.5 Ohms (above standard 2.0 Ohm threshold). Reconditioned earthing electrode.',
+            timestamp: 'Yesterday, 15:20:00 IST'
+          },
+          {
+            id: 'c-503',
+            author: 'Operator Suresh Kumar',
+            role: 'OPERATOR',
+            content: 'Neutral potential verified at 1.8V. Voltage steady at 238V. Incident marked RESOLVED.',
+            timestamp: 'Yesterday, 15:45:10 IST'
+          }
+        ]
+      },
+      {
+        id: 'tkt-006',
+        ticketNumber: 'TSSPDCL-HYD-00422',
+        serviceConnectionNo: '1109-99014',
+        locality: 'Financial District, Gachibowli',
+        substationName: 'Gachibowli 33/11kV Substation',
+        sectionOffice: 'Gachibowli Section',
+        primaryAssetCode: 'F-12-FIN',
+        priority: 'P1_CRITICAL',
+        status: 'ESCALATED',
+        summary: 'Underground 11kV XLPE cable fault between Substation and Waverock Junction',
+        acknowledgementChannel: 'SMS / PORTAL',
+        acknowledgementStatus: 'SENT',
+        recipientContact: '+91 98490 99882',
+        createdAt: 'Today, 16:50:33 IST',
+        resolvedAt: null,
+        durationText: 'Active: 1h 10m',
+        resolutionCategory: null,
+        resolutionReason: null,
+        allocatedTechnicianId: null,
+        assignedTechnicianName: null,
+        assignedTechnicianRole: null,
+        assignedTechnicianPhone: null,
+        allocatedCrewId: 'crew-03',
+        assignedCrewName: 'Cybercity Circle Specialized Cable Gang',
+        assignedCrewLead: 'DE / Technical Cybercity',
+        assignedCrewVehicle: 'Cable Fault Locator Van TS-09-EX-0099',
+        assignedCrewPhone: '+91 94906 18200',
+        assignedOperatorName: 'Operator Ramesh Varma (ID: OP-842)',
+        consumersAffected: 380,
+        comments: [
+          {
+            id: 'c-601',
+            author: 'AI Triage Agent',
+            role: 'AI_SYSTEM',
+            content: 'Feeder F-12 tripped on instantaneous overcurrent. High-voltage insulation test showed zero resistance between R-phase and metallic sheath.',
+            timestamp: '16:50:33 IST'
+          },
+          {
+            id: 'c-602',
+            author: 'Operator Ramesh Varma',
+            role: 'OPERATOR',
+            content: 'Underground cable puncture verified. Escalated to Cybercity Divisional Engineer. Requested Specialized Cable Thumper Van.',
+            timestamp: '17:05:15 IST'
+          },
+          {
+            id: 'c-603',
+            author: 'DE / Technical Cybercity',
+            role: 'SUPERVISOR',
+            content: 'Fault localized to 420 meters from Gachibowli 33kV Substation. GHMC Cyberabad emergency road cutting permission requested.',
+            timestamp: '17:30:00 IST'
+          }
+        ]
+      }
+    ];
+
+    let currentTicketId = 'tkt-001';
+    let ticketStatusFilter = 'ALL';
+    let ticketPriorityFilter = 'ALL';
+    let ticketSectionFilter = 'ALL';
+    let ticketSearchQuery = '';
+
+    let activeHub = HUBS[0];
+    let currentScenarioId = 'feeder_fault';
+    let mapInstance = null;
+    let callTimerInterval = null;
+    let callDurationSecs = 0;
+    let currentTheme = 'dark';
+    let isFullscreen = false;
+    let isSidebarOpen = true;
+
+    // 1. Sidebar Open / Close Toggle
+    function toggleSidebar(forceState) {
+      const sidebar = document.getElementById('sidebar');
+      if (forceState !== undefined) {
+        isSidebarOpen = forceState;
+      } else {
+        isSidebarOpen = !isSidebarOpen;
+      }
+
+      if (isSidebarOpen) {
+        sidebar.classList.remove('-ml-64');
+      } else {
+        sidebar.classList.add('-ml-64');
+      }
+
+      // Resize map when sidebar animates
+      setTimeout(() => {
+        if (mapInstance) mapInstance.resize();
+      }, 350);
+    }
+
+    // 2. Dark / Light Theme Toggle
+    function toggleTheme() {
+      const body = document.getElementById('appBody');
+      const btnText = document.getElementById('themeBtnText');
+      const btnIcon = document.getElementById('themeBtnIcon');
+      const headerIcon = document.getElementById('headerThemeIcon');
+
+      if (currentTheme === 'dark') {
+        currentTheme = 'light';
+        body.classList.add('theme-light');
+        btnText.textContent = 'Switch to Dark Theme';
+        btnIcon.setAttribute('data-lucide', 'moon');
+        btnIcon.className = 'w-4 h-4 text-indigo-500';
+        headerIcon.setAttribute('data-lucide', 'moon');
+        headerIcon.className = 'w-4 h-4 text-indigo-500';
+      } else {
+        currentTheme = 'dark';
+        body.classList.remove('theme-light');
+        btnText.textContent = 'Switch to Light Theme';
+        btnIcon.setAttribute('data-lucide', 'sun');
+        btnIcon.className = 'w-4 h-4 text-amber-500';
+        headerIcon.setAttribute('data-lucide', 'sun');
+        headerIcon.className = 'w-4 h-4 text-amber-500';
+      }
+      lucide.createIcons();
+      updateMapTheme();
+    }
+
+    function updateMapTheme() {
+      if (!mapInstance) return;
+      if (currentTheme === 'dark') {
+        mapInstance.setLayoutProperty('osm-dark-layer', 'visibility', 'visible');
+        mapInstance.setLayoutProperty('osm-light-layer', 'visibility', 'none');
+      } else {
+        mapInstance.setLayoutProperty('osm-dark-layer', 'visibility', 'none');
+        mapInstance.setLayoutProperty('osm-light-layer', 'visibility', 'visible');
+      }
+    }
+
+    // 3. Fullscreen Map Toggle
+    function toggleMapFullscreen() {
+      const wrapper = document.getElementById('mapWrapper');
+      const icon = document.getElementById('fsIcon');
+      isFullscreen = !isFullscreen;
+      if (isFullscreen) {
+        wrapper.classList.add('map-fullscreen');
+        icon.setAttribute('data-lucide', 'minimize-2');
+      } else {
+        wrapper.classList.remove('map-fullscreen');
+        icon.setAttribute('data-lucide', 'maximize-2');
+      }
+      lucide.createIcons();
+      setTimeout(() => mapInstance && mapInstance.resize(), 200);
+    }
+
+    // 4. Dedicated Page Navigation
+    function navigateToPage(pageId) {
+      ['map', 'incidents', 'crews', 'calls', 'diagnosis'].forEach(p => {
+        const sec = document.getElementById(`page-${p}`);
+        const nav = document.getElementById(`nav-${p}`);
+        if (p === pageId) {
+          sec.classList.remove('hidden');
+          nav.className = 'w-full flex items-center justify-between p-2.5 rounded-xl bg-cyan-600 text-white shadow-md shadow-cyan-600/30 font-semibold cursor-pointer text-left transition-all';
+        } else {
+          sec.classList.add('hidden');
+          nav.className = 'w-full flex items-center justify-between p-2.5 rounded-xl theme-card border-transparent hover:border-slate-500/30 cursor-pointer text-left transition-all';
+        }
+      });
+      if (pageId === 'map' && mapInstance) {
+        setTimeout(() => mapInstance.resize(), 100);
+      }
+    }
+
+    // 5. Hub Search & Pills
+    function renderHubPills(filter = '') {
+      const container = document.getElementById('hubPillsContainer');
+      const filtered = HUBS.filter(h => 
+        h.name.toLowerCase().includes(filter.toLowerCase()) || 
+        h.locality.toLowerCase().includes(filter.toLowerCase()) ||
+        h.feederCode.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      let html = '';
+      filtered.forEach(hub => {
+        const isSel = hub.id === activeHub.id;
+        const dot = hub.status === 'HEALTHY' ? 'bg-emerald-500' : 'bg-red-500 animate-pulse';
+        html += `
+          <button onclick="selectHub('${hub.id}')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium shrink-0 cursor-pointer ${
+            isSel ? 'bg-cyan-600 text-white shadow-md border border-cyan-400' : 'theme-card hover:border-cyan-500 border theme-border'
+          }">
+            <span class="w-2 h-2 rounded-full ${dot}"></span>
+            <span>${hub.name.split(' ')[0]}</span>
+            <span class="text-[10px] opacity-75 font-mono">(${hub.feederCode.split('-')[0]})</span>
+          </button>`;
+      });
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function handleHubSearch(val) {
+      renderHubPills(val);
+      const match = HUBS.find(h => 
+        h.name.toLowerCase().includes(val.toLowerCase()) || 
+        h.locality.toLowerCase().includes(val.toLowerCase()) ||
+        h.feederCode.toLowerCase().includes(val.toLowerCase())
+      );
+      if (match && match.id !== activeHub.id) selectHub(match.id);
+    }
+
+    function selectHub(hubId) {
+      const hub = HUBS.find(h => h.id === hubId);
+      if (!hub) return;
+      activeHub = hub;
+
+      document.getElementById('activeHubName').textContent = hub.name;
+      document.getElementById('activeHubLocality').textContent = `(${hub.locality})`;
+      document.getElementById('activeHubFeeder').textContent = hub.feederCode;
+      document.getElementById('activeHubMeters').textContent = hub.meters;
+      
+      const st = document.getElementById('activeHubStatus');
+      if (hub.status === 'HEALTHY') {
+        st.className = 'flex items-center gap-1 text-emerald-500 font-semibold';
+        st.innerHTML = '<i data-lucide="check-circle-2" class="w-3 h-3"></i> 11kV FEEDER HEALTHY';
+      } else {
+        st.className = 'flex items-center gap-1 text-red-500 font-semibold animate-pulse';
+        st.innerHTML = '<i data-lucide="alert-triangle" class="w-3 h-3"></i> 11kV FEEDER OUTAGE';
+      }
+
+      document.getElementById('dtrHubSubtext').textContent = `Connected to ${hub.feederCode} (${hub.name})`;
+      document.getElementById('dtrCountBadge').textContent = `${hub.transformers.length} DTRs`;
+
+      renderTransformersList(hub.transformers);
+      renderHubPills();
+
+      if (mapInstance) {
+        mapInstance.flyTo({ center: hub.coords, zoom: 15.6, duration: 1200 });
+      }
+      addAuditLog('HUB_SELECTED', `Switched to TSSPDCL Hub: ${hub.name} (${hub.feederCode})`);
+      lucide.createIcons();
+    }
+
+    function renderTransformersList(transformers) {
+      const container = document.getElementById('transformersListContainer');
+      let html = '';
+      transformers.forEach(tr => {
+        const color = tr.state === 'HEALTHY' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30' : 'bg-red-500/20 text-red-600 dark:text-red-300 border-red-500/30 animate-pulse';
+        html += `
+          <div onclick="focusDtr('${tr.code}', ${tr.coords[0]}, ${tr.coords[1]})" class="p-3 rounded-xl border theme-border theme-card hover:border-cyan-500 transition-all cursor-pointer shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold font-mono">${tr.code}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}">${tr.state}</span>
+              </div>
+              <button class="flex items-center gap-1 text-[11px] text-cyan-500 hover:underline">
+                <i data-lucide="map-pin" class="w-3 h-3"></i> Focus DTR
+              </button>
+            </div>
+            <p class="text-xs font-medium mb-2">${tr.name}</p>
+            <div class="grid grid-cols-3 gap-2 text-[11px] theme-inner p-2 rounded-lg border theme-border">
+              <div><span class="text-[9px] theme-text-muted block uppercase">Capacity</span><span class="font-semibold">${tr.capacity} kVA</span></div>
+              <div><span class="text-[9px] theme-text-muted block uppercase">Voltage</span><span class="font-semibold">${tr.voltage}</span></div>
+              <div><span class="text-[9px] theme-text-muted block uppercase">Consumers</span><span class="font-semibold ${tr.consumers ? 'text-red-500' : ''}">${tr.consumers ? tr.consumers + ' down' : '0 offline'}</span></div>
+            </div>
+            <div class="mt-2 text-[10px] theme-text-muted flex items-center gap-1">
+              <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i><span>Telemetry: ${tr.telemetry}</span>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function focusDtr(code, lng, lat) {
+      if (mapInstance) {
+        mapInstance.flyTo({ center: [lng, lat], zoom: 17.2, duration: 1000 });
+      }
+      showAssetInspector(code, 'TSSPDCL Distribution Transformer', 'DTR INSPECTION', 'Active');
+    }
+
+    let crewStatusFilter = 'ALL';
+    let crewSectionFilter = 'ALL';
+    let crewSearchQuery = '';
+    let crewViewMode = 'GANGS'; // 'GANGS' | 'INDIVIDUALS'
+
+    function setCrewViewMode(mode) {
+      crewViewMode = mode;
+      const btnG = document.getElementById('btnViewGangs');
+      const btnI = document.getElementById('btnViewIndividuals');
+      if (btnG && btnI) {
+        if (mode === 'GANGS') {
+          btnG.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold bg-cyan-600 text-white shadow-sm cursor-pointer transition-all';
+          btnI.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold theme-text-muted hover:text-cyan-500 cursor-pointer transition-all';
+        } else {
+          btnI.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold bg-cyan-600 text-white shadow-sm cursor-pointer transition-all';
+          btnG.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold theme-text-muted hover:text-cyan-500 cursor-pointer transition-all';
+        }
+      }
+      renderCrews();
+    }
+
+    function setCrewStatusFilter(status) {
+      crewStatusFilter = status;
+      ['ALL', 'AVAILABLE', 'DISPATCHED'].forEach(s => {
+        const btn = document.getElementById(`tab-crew-${s}`);
+        if (!btn) return;
+        if (s === status) {
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600 text-white shadow-md shadow-cyan-600/30 whitespace-nowrap cursor-pointer';
+        } else {
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer';
+        }
+      });
+      renderCrews();
+    }
+
+    function setCrewSectionFilter(section) {
+      crewSectionFilter = section;
+      const resetBtn = document.getElementById('crewResetBtn');
+      if (resetBtn) {
+        if (crewSectionFilter !== 'ALL' || crewStatusFilter !== 'ALL' || crewSearchQuery) resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+      }
+      renderCrews();
+    }
+
+    function handleCrewSearch(query) {
+      crewSearchQuery = query;
+      const resetBtn = document.getElementById('crewResetBtn');
+      if (resetBtn) {
+        if (crewSectionFilter !== 'ALL' || crewStatusFilter !== 'ALL' || crewSearchQuery) resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+      }
+      renderCrews();
+    }
+
+    function resetCrewFilters() {
+      crewStatusFilter = 'ALL';
+      crewSectionFilter = 'ALL';
+      crewSearchQuery = '';
+      const sInput = document.getElementById('crewSearchInput');
+      if (sInput) sInput.value = '';
+      const sSel = document.getElementById('crewSectionSelect');
+      if (sSel) sSel.value = 'ALL';
+      const resetBtn = document.getElementById('crewResetBtn');
+      if (resetBtn) resetBtn.classList.add('hidden');
+      setCrewStatusFilter('ALL');
+    }
+
+    function getAllTechnicians() {
+      return CREWS.flatMap(c => (c.members || []).map(m => ({
+        ...m,
+        gangId: c.id,
+        gangName: c.name,
+        vehicleId: c.vehicle,
+        vehicleType: c.vehicleType,
+        sectionOffice: c.office,
+        closestTicket: c.closestTicket,
+        speedKmph: c.speedKmph,
+        location: c.location
+      })));
+    }
+
+    function renderCrews() {
+      const container = document.getElementById('crewsGrid');
+      if (!container) return;
+
+      const allTechnicians = getAllTechnicians();
+      const totalLinemen = allTechnicians.length;
+      const availLinemen = allTechnicians.filter(m => m.status === 'AVAILABLE').length;
+      const assignedLinemen = allTechnicians.filter(m => m.status === 'ASSIGNED').length;
+      const restingLinemen = allTechnicians.filter(m => m.status === 'RESTING').length;
+
+      const availGangs = CREWS.filter(c => c.status === 'AVAILABLE').length;
+      const dispGangs = CREWS.filter(c => c.status === 'DISPATCHED' || c.status === 'ON_SITE').length;
+
+      // Update KPI Elements
+      const kpiTotalGangs = document.getElementById('kpiTotalGangs');
+      if (kpiTotalGangs) kpiTotalGangs.textContent = CREWS.length;
+
+      const kpiGangSplit = document.getElementById('kpiGangSplit');
+      if (kpiGangSplit) kpiGangSplit.textContent = `${availGangs} Standby • ${dispGangs} Active`;
+
+      const kpiLinemenCount = document.getElementById('kpiLinemenCount');
+      if (kpiLinemenCount) kpiLinemenCount.textContent = `${availLinemen} / ${totalLinemen}`;
+
+      const kpiLinemenResting = document.getElementById('kpiLinemenResting');
+      if (kpiLinemenResting) kpiLinemenResting.textContent = `${assignedLinemen} Assigned • ${restingLinemen} Resting`;
+
+      const kpiDispatchedGangs = document.getElementById('kpiDispatchedGangs');
+      if (kpiDispatchedGangs) kpiDispatchedGangs.textContent = dispGangs;
+
+      const crewStandbyBadge = document.getElementById('crewStandbyBadge');
+      if (crewStandbyBadge) {
+        crewStandbyBadge.innerHTML = `<i data-lucide="radio" class="w-3.5 h-3.5 text-emerald-500 animate-pulse"></i><span>${availLinemen} of ${totalLinemen} Linemen Available</span>`;
+      }
+
+      const badgeAll = document.getElementById('badge-crew-ALL');
+      if (badgeAll) badgeAll.textContent = crewViewMode === 'GANGS' ? CREWS.length : totalLinemen;
+      const badgeAvail = document.getElementById('badge-crew-AVAILABLE');
+      if (badgeAvail) badgeAvail.textContent = crewViewMode === 'GANGS' ? availGangs : availLinemen;
+      const badgeDisp = document.getElementById('badge-crew-DISPATCHED');
+      if (badgeDisp) badgeDisp.textContent = crewViewMode === 'GANGS' ? dispGangs : assignedLinemen;
+
+      if (crewViewMode === 'INDIVIDUALS') {
+        renderIndividualTechniciansView(container, allTechnicians);
+      } else {
+        renderSectionGangsView(container);
+      }
+      lucide.createIcons();
+    }
+
+    function renderIndividualTechniciansView(container, allTechnicians) {
+      const filtered = allTechnicians.filter(tech => {
+        if (crewStatusFilter === 'AVAILABLE' && tech.status !== 'AVAILABLE') return false;
+        if (crewStatusFilter === 'DISPATCHED' && tech.status !== 'ASSIGNED') return false;
+        if (crewSectionFilter !== 'ALL' && !tech.sectionOffice.toLowerCase().includes(crewSectionFilter.toLowerCase())) return false;
+        if (crewSearchQuery.trim()) {
+          const q = crewSearchQuery.toLowerCase();
+          const matchName = tech.name.toLowerCase().includes(q);
+          const matchRole = tech.role.toLowerCase().includes(q);
+          const matchGang = tech.gangName.toLowerCase().includes(q);
+          const matchVeh = tech.vehicleId.toLowerCase().includes(q);
+          const matchPhone = tech.phone.toLowerCase().includes(q);
+          if (!matchName && !matchRole && !matchGang && !matchVeh && !matchPhone) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12 theme-card rounded-2xl border theme-border theme-text-muted text-xs">
+            No field technicians match your filter criteria.
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(tech => {
+        const isAssigned = tech.status === 'ASSIGNED';
+        const isAvail = tech.status === 'AVAILABLE';
+
+        html += `
+          <div class="p-4 rounded-2xl border theme-border theme-card shadow-xl flex flex-col justify-between transition-all ${
+            isAssigned ? 'border-amber-500/50 bg-amber-500/5 shadow-amber-500/10' : ''
+          }">
+            <div>
+              <!-- Header: Section & Status -->
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-mono text-cyan-500 font-bold truncate max-w-[70%]">${tech.sectionOffice}</span>
+                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                  isAssigned ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' :
+                  isAvail ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' :
+                  'bg-slate-700/50 text-slate-400 border border-slate-600/30'
+                }">
+                  <span class="w-1.5 h-1.5 rounded-full ${isAssigned ? 'bg-amber-500 animate-ping' : isAvail ? 'bg-emerald-500' : 'bg-slate-400'}"></span>
+                  ${tech.status}
+                </span>
+              </div>
+
+              <!-- Tech Name & Avatar -->
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 font-mono ${
+                  isAssigned ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' :
+                  isAvail ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/30' :
+                  'bg-slate-700/50 text-slate-400'
+                }">
+                  ${tech.avatarInitials}
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-sm font-bold truncate">${tech.name}</h3>
+                  <p class="text-xs theme-text-muted truncate">${tech.role}</p>
+                  <a href="tel:${tech.phone}" class="text-[11px] text-cyan-500 font-mono font-bold hover:underline">${tech.phone}</a>
+                </div>
+              </div>
+
+              <!-- Squad & Fleet Vehicle info -->
+              <div class="p-2.5 rounded-xl border theme-border theme-inner text-xs space-y-1.5 mb-3">
+                <div class="flex items-center justify-between">
+                  <span class="theme-text-muted text-[11px]">Section Gang:</span>
+                  <span class="font-bold text-[11px] truncate max-w-[170px]">${tech.gangName}</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] pt-1 border-t theme-border">
+                  <span class="theme-text-muted">Fleet Vehicle:</span>
+                  <span class="font-mono text-cyan-500 font-bold">${tech.vehicleId}</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] pt-1 border-t theme-border">
+                  <span class="theme-text-muted">Specialization:</span>
+                  <span class="text-[10px] opacity-80 truncate max-w-[170px]">${tech.experience}</span>
+                </div>
+              </div>
+
+              <!-- What They Are Working On (If ASSIGNED) -->
+              ${isAssigned ? `
+                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-1.5 mb-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase font-bold flex items-center gap-1">
+                      <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i> Active Assignment
+                    </span>
+                    <span class="text-[10px] font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded">
+                      ${tech.assignedTicketNumber || 'TSSPDCL-HYD-00412'}
+                    </span>
+                  </div>
+                  <p class="text-[11px] font-semibold leading-tight">
+                    ${tech.assignedTaskDescription || 'Emergency fault rectification'}
+                  </p>
+                  <div class="text-[10px] flex items-center justify-between pt-1 border-t border-amber-500/20">
+                    <span>${tech.assignedAt || 'Assigned Recently'}</span>
+                    <button onclick="releaseTechnician('${tech.id}')" class="text-red-400 hover:underline font-bold cursor-pointer">
+                      Release Lineman
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Recommended Outage for Tech (If AVAILABLE) -->
+              ${isAvail && tech.closestTicket ? `
+                <div class="p-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-500 space-y-1 mb-3">
+                  <div class="flex items-center justify-between text-[10px] font-bold">
+                    <span>RECOMMENDED OUTAGE</span>
+                    <span class="font-mono">${tech.closestTicket.distanceKm} km • ~${tech.closestTicket.etaMinutes}m ETA</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono font-bold text-xs">${tech.closestTicket.ticketNumber}</span>
+                    <span class="text-[9px] px-1 py-0.2 rounded bg-red-500/20 text-red-500 uppercase">${tech.closestTicket.priority}</span>
+                  </div>
+                  <p class="text-[10px] truncate opacity-90">${tech.closestTicket.summary}</p>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="pt-2 border-t theme-border space-y-1.5">
+              ${isAvail ? `
+                <button onclick="openAssignTechModalForLineman('${tech.id}')" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-600/30 transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95">
+                  <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                  <span>Assign Outage Ticket</span>
+                </button>
+                ${tech.closestTicket ? `
+                  <button onclick="confirmAssignTechnicianToTicket('${tech.id}', '${tech.closestTicket.ticketId}')" class="w-full py-1.5 rounded-xl text-[11px] border border-cyan-500/40 text-cyan-500 hover:bg-cyan-500/10 cursor-pointer text-center font-semibold transition-all">
+                    Quick Dispatch Closest (${tech.closestTicket.ticketNumber})
+                  </button>
+                ` : ''}
+              ` : isAssigned ? `
+                <button onclick="releaseTechnician('${tech.id}')" class="w-full py-2.5 rounded-xl theme-inner border theme-border hover:border-red-500 text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 text-amber-500">
+                  <i data-lucide="user-minus" class="w-3.5 h-3.5"></i>
+                  <span>Release Technician to Standby</span>
+                </button>
+              ` : `
+                <div class="text-center py-2 text-xs theme-text-muted">
+                  <span>Off-Duty / Standby at Section Depot</span>
+                </div>
+              `}
+            </div>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderSectionGangsView(container) {
+      const filtered = CREWS.filter(c => {
+        if (crewStatusFilter === 'AVAILABLE' && c.status !== 'AVAILABLE') return false;
+        if (crewStatusFilter === 'DISPATCHED' && c.status !== 'DISPATCHED' && c.status !== 'ON_SITE') return false;
+        if (crewSectionFilter !== 'ALL' && !c.office.toLowerCase().includes(crewSectionFilter.toLowerCase())) return false;
+        if (crewSearchQuery.trim()) {
+          const q = crewSearchQuery.toLowerCase();
+          const matchName = c.name.toLowerCase().includes(q);
+          const matchVeh = c.vehicle.toLowerCase().includes(q);
+          const matchLead = c.lead.toLowerCase().includes(q);
+          const matchLoc = c.location.toLowerCase().includes(q);
+          const matchMember = c.members && c.members.some(m => m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q));
+          if (!matchName && !matchVeh && !matchLead && !matchLoc && !matchMember) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12 theme-card rounded-2xl border theme-border theme-text-muted text-xs">
+            No emergency gangs match your filter criteria.
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(c => {
+        const isDisp = c.status === 'DISPATCHED';
+        const isOnSite = c.status === 'ON_SITE';
+        const isBusy = isDisp || isOnSite;
+        const members = c.members || [];
+        const availInGang = members.filter(m => m.status === 'AVAILABLE').length;
+
+        // Linemen Profile Cards HTML
+        let membersHtml = '';
+        members.forEach(m => {
+          const isMembAvail = m.status === 'AVAILABLE';
+          const isMembAssigned = m.status === 'ASSIGNED';
+
+          membersHtml += `
+            <div class="p-2 rounded-xl border theme-border flex items-center justify-between gap-2 text-xs transition-all ${
+              isMembAvail ? 'theme-inner hover:border-cyan-500/50' :
+              isMembAssigned ? 'border-amber-500/40 bg-amber-500/5' :
+              'theme-card opacity-60'
+            }">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 font-mono ${
+                  isMembAvail ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/30' :
+                  isMembAssigned ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' :
+                  'bg-slate-700/50 text-slate-400'
+                }">
+                  ${m.avatarInitials}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1">
+                    <span class="font-bold truncate text-[11px]">${m.name}</span>
+                    <i data-lucide="${isMembAvail ? 'user-check' : isMembAssigned ? 'zap' : 'user-x'}" class="w-3 h-3 ${isMembAvail ? 'text-emerald-500' : isMembAssigned ? 'text-amber-500' : 'text-slate-400'} shrink-0"></i>
+                  </div>
+                  <p class="text-[10px] theme-text-muted truncate">${m.role}</p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end shrink-0 gap-0.5">
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                  isMembAvail ? 'bg-emerald-500/20 text-emerald-500' :
+                  isMembAssigned ? 'bg-amber-500/20 text-amber-500' :
+                  'bg-slate-700/50 text-slate-400'
+                }">
+                  ${m.status}
+                </span>
+                <div class="flex items-center gap-1">
+                  ${isMembAvail ? `
+                    <button onclick="openAssignTechModalForLineman('${m.id}')" class="px-1.5 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[9px] font-semibold cursor-pointer">
+                      Assign
+                    </button>
+                  ` : isMembAssigned ? `
+                    <button onclick="releaseTechnician('${m.id}')" class="px-1.5 py-0.5 rounded theme-inner border theme-border hover:border-red-500 text-[9px] font-semibold text-amber-500 cursor-pointer">
+                      Release
+                    </button>
+                  ` : ''}
+                  <a href="tel:${m.phone}" class="text-[10px] text-cyan-500 font-mono hover:underline">${m.phone.replace('+91 ', '')}</a>
+                </div>
+              </div>
+            </div>`;
+        });
+
+        html += `
+          <div class="p-4 rounded-2xl border theme-border theme-card shadow-xl flex flex-col justify-between transition-all ${
+            isBusy ? 'border-amber-500/50 bg-amber-500/5 shadow-amber-500/10' : ''
+          }">
+            <div>
+              <!-- Header: Section & Status -->
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-mono text-cyan-500 font-bold truncate max-w-[70%]">${c.office}</span>
+                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                  isDisp ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse' :
+                  isOnSite ? 'bg-blue-500/20 text-blue-500 border border-blue-500/30' :
+                  'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                }">
+                  <span class="w-1.5 h-1.5 rounded-full ${isDisp ? 'bg-amber-500 animate-ping' : isOnSite ? 'bg-blue-500' : 'bg-emerald-500'}"></span>
+                  ${c.status}
+                </span>
+              </div>
+
+              <!-- Gang Title & Specialization -->
+              <h3 class="text-base font-bold mb-1 leading-snug">${c.name}</h3>
+              <div class="mb-3">
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                  ${c.specializationLabel || c.specialization}
+                </span>
+              </div>
+
+              <!-- Vehicle & Location Bar -->
+              <div class="p-2.5 rounded-xl border theme-border theme-inner text-xs space-y-1.5 mb-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <i data-lucide="truck" class="w-3.5 h-3.5 text-cyan-500 shrink-0"></i>
+                    <span class="font-semibold">${c.vehicleType || 'Fleet Vehicle'}</span>
+                  </div>
+                  <span class="font-mono text-[11px] font-bold text-cyan-500 shrink-0">${c.vehicle}</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] pt-1 border-t theme-border">
+                  <div class="flex items-center gap-1 truncate theme-text-muted">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-red-500 shrink-0"></i>
+                    <span class="truncate">${c.location}</span>
+                  </div>
+                  <button onclick="focusCrewOnMap('${c.id}')" class="text-cyan-500 hover:underline flex items-center gap-1 text-[10px] font-bold shrink-0 cursor-pointer ml-1">
+                    <i data-lucide="compass" class="w-3 h-3"></i> Map
+                  </button>
+                </div>
+              </div>
+
+              <!-- Active Personnel Roster Header -->
+              <div class="mb-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold flex items-center gap-1.5">
+                    <i data-lucide="users" class="w-3.5 h-3.5 text-cyan-500"></i>
+                    <span>Linemen Roster (${members.length}):</span>
+                  </span>
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.2 rounded-full ${
+                    availInGang > 0 ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'
+                  }">
+                    ${availInGang} / ${members.length} Available
+                  </span>
+                </div>
+
+                <!-- Linemen List -->
+                <div class="space-y-1.5">
+                  ${membersHtml}
+                </div>
+              </div>
+
+              <!-- What They Are Working On (If Dispatched or On Site) -->
+              ${isBusy ? `
+                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-500 space-y-2 mb-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase font-bold flex items-center gap-1">
+                      <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i> Current Active Assignment
+                    </span>
+                    <span class="text-[10px] font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded">
+                      ${c.assignedTicketNumber || c.assignedIncidentId || 'TSSPDCL-HYD-00412'}
+                    </span>
+                  </div>
+                  <p class="text-xs font-semibold leading-snug">
+                    ${c.assignedTaskDescription || 'Emergency overhead line fault rectification'}
+                  </p>
+                  <div class="text-[10px] flex items-center justify-between pt-1 border-t border-amber-500/20">
+                    <span>Status: ${isOnSite ? 'On-Site Diagnostic' : 'En Route (Speed ~ 38 km/h)'}</span>
+                    <span>${c.assignedAt || 'Assigned Recently'}</span>
+                  </div>
+                  <div class="flex items-center gap-2 pt-1">
+                    ${!isOnSite ? `
+                      <button onclick="markCrewOnSite('${c.id}')" class="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold cursor-pointer shadow-sm transition-all">
+                        Mark Arrived On-Site
+                      </button>` : ''}
+                    <button onclick="releaseCrew('${c.id}')" class="flex-1 py-1.5 rounded-lg theme-inner border theme-border text-[11px] font-semibold cursor-pointer transition-all">
+                      Release Gang
+                    </button>
+                  </div>
+                </div>` : ''}
+
+              <!-- Recommended Closest Ticket (If Available) -->
+              ${!isBusy && c.closestTicket ? `
+                <div class="p-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-500 space-y-2 mb-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase font-bold flex items-center gap-1 text-cyan-500">
+                      <i data-lucide="navigation" class="w-3 h-3 text-cyan-500"></i> Recommended Closest Ticket
+                    </span>
+                    <span class="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-500 px-2 py-0.5 rounded">
+                      ${c.closestTicket.distanceKm} km • ~${c.closestTicket.etaMinutes}m ETA
+                    </span>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <span class="font-mono font-bold text-xs text-cyan-500">${c.closestTicket.ticketNumber}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/20 text-red-500 uppercase">${c.closestTicket.priority}</span>
+                    </div>
+                    <p class="text-[11px] leading-tight line-clamp-2">${c.closestTicket.summary}</p>
+                    <span class="text-[10px] opacity-80 block mt-0.5">Locality: ${c.closestTicket.locality}</span>
+                  </div>
+                </div>` : ''}
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="pt-2 border-t theme-border">
+              ${!isBusy ? `
+                <div class="space-y-1.5">
+                  <button onclick="dispatchClosestTicket('${c.id}')" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-600/30 transition-all cursor-pointer active:scale-95">
+                    <i data-lucide="navigation" class="w-3.5 h-3.5"></i>
+                    <span>Dispatch Closest Ticket (${c.closestTicket ? c.closestTicket.ticketNumber : 'Outage'})</span>
+                  </button>
+                  <button onclick="openAssignGangModalForCrew('${c.id}')" class="w-full py-1.5 rounded-xl text-[11px] border theme-border theme-inner text-center hover:border-cyan-500 cursor-pointer">
+                    Assign Different Ticket...
+                  </button>
+                </div>` : `
+                <div class="flex items-center justify-between text-xs theme-text-muted">
+                  <span class="flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3 text-cyan-500"></i> ETA ~ ${c.eta} mins
+                  </span>
+                  <button onclick="focusCrewOnMap('${c.id}')" class="text-cyan-500 hover:underline flex items-center gap-1 text-[11px] font-semibold cursor-pointer">
+                    <i data-lucide="compass" class="w-3.5 h-3.5"></i> Track Live GPS
+                  </button>
+                </div>`}
+            </div>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function dispatchClosestTicket(crewId) {
+      const c = CREWS.find(cr => cr.id === crewId);
+      if (!c) return;
+
+      let ticket = null;
+      if (c.closestTicket) {
+        ticket = TICKETS.find(t => t.id === c.closestTicket.ticketId || t.ticketNumber === c.closestTicket.ticketNumber);
+      }
+      if (!ticket) {
+        ticket = TICKETS.find(t => t.status !== 'RESOLVED') || TICKETS[0];
+      }
+
+      // Pick first available technician in this gang for accountability
+      const tech = (c.members || []).find(m => m.status === 'AVAILABLE') || (c.members || [])[0];
+      if (tech && ticket) {
+        confirmAssignTechnicianToTicket(tech.id, ticket.id);
+      }
+    }
+
+    function markCrewOnSite(crewId) {
+      const c = CREWS.find(cr => cr.id === crewId);
+      if (c) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+        c.status = 'ON_SITE';
+        c.speedKmph = 0;
+
+        const ticket = TICKETS.find(t => t.id === c.assignedIncidentId || t.ticketNumber === c.assignedTicketNumber);
+        if (ticket) {
+          c.location = `${ticket.locality} (On-Site Pole)`;
+          ticket.comments.push({
+            id: `c-${Date.now()}`,
+            author: c.lead,
+            role: 'FIELD_CREW',
+            content: `Crew arrived on site at ${ticket.locality}. Vehicle stationed. Commencing physical line & transformer diagnostic.`,
+            timestamp: `Today, ${time}`
+          });
+        }
+
+        addAuditLog('CREW_ON_SITE', `${c.name} reached incident site at ${c.location}. Safe zone established.`);
+        renderCrews();
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    function releaseCrew(crewId) {
+      const c = CREWS.find(cr => cr.id === crewId);
+      if (c) {
+        const prevTicket = c.assignedTicketNumber || c.assignedIncidentId;
+        c.status = 'AVAILABLE';
+        c.assignedIncidentId = null;
+        c.assignedTicketNumber = null;
+        c.assignedTaskDescription = null;
+        c.assignedAt = null;
+        c.speedKmph = 0;
+        c.location = c.baseDepot;
+
+        if (c.members) {
+          c.members.forEach(m => {
+            if (m.status === 'ASSIGNED') {
+              m.status = 'AVAILABLE';
+              m.assignedTicketId = null;
+              m.assignedTicketNumber = null;
+              m.assignedTaskDescription = null;
+              m.assignedAt = null;
+            }
+          });
+        }
+
+        addAuditLog('CREW_RELEASED', `${c.name} completed assignment for ${prevTicket || 'ticket'}. Returned to ${c.baseDepot} as AVAILABLE.`);
+        renderCrews();
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    function releaseTechnician(techId) {
+      let foundTech = null;
+      let foundGang = null;
+
+      for (const c of CREWS) {
+        if (c.members) {
+          const m = c.members.find(x => x.id === techId);
+          if (m) {
+            foundTech = m;
+            foundGang = c;
+            break;
+          }
+        }
+      }
+
+      if (foundTech) {
+        const prevTicket = foundTech.assignedTicketNumber;
+        foundTech.status = 'AVAILABLE';
+        foundTech.assignedTicketId = null;
+        foundTech.assignedTicketNumber = null;
+        foundTech.assignedTaskDescription = null;
+        foundTech.assignedAt = null;
+
+        // Check if gang has any other assigned members
+        if (foundGang) {
+          const anyAssigned = foundGang.members && foundGang.members.some(m => m.status === 'ASSIGNED');
+          if (!anyAssigned) {
+            foundGang.status = 'AVAILABLE';
+            foundGang.assignedIncidentId = null;
+            foundGang.assignedTicketNumber = null;
+            foundGang.assignedTaskDescription = null;
+            foundGang.assignedAt = null;
+            foundGang.speedKmph = 0;
+            foundGang.location = foundGang.baseDepot;
+          }
+        }
+
+        addAuditLog('TECH_RELEASED', `Field Technician ${foundTech.name} released from ${prevTicket || 'assignment'}. Status restored to AVAILABLE.`);
+        renderCrews();
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    function focusCrewOnMap(crewId) {
+      const c = CREWS.find(cr => cr.id === crewId);
+      if (c && c.coords) {
+        navigateToPage('map');
+        if (mapInstance) {
+          mapInstance.flyTo({ center: c.coords, zoom: 16.5, duration: 1200 });
+        }
+      }
+    }
+
+    let gangModalTargetCrewId = null;
+    function openAssignGangModalForCrew(crewId) {
+      gangModalTargetCrewId = crewId;
+      const c = CREWS.find(cr => cr.id === crewId);
+      const list = document.getElementById('gangSelectionList');
+      const title = document.getElementById('assignModalTitle');
+      if (!list) return;
+
+      if (title) title.textContent = `Dispatch Gang: ${c ? c.name : 'Crew'}`;
+
+      const openTkts = TICKETS.filter(t => t.status !== 'RESOLVED');
+      let html = '';
+      openTkts.forEach(t => {
+        html += `
+          <button onclick="confirmCrewDispatchTicket('${t.id}')" class="w-full p-2.5 rounded-xl border theme-border theme-inner hover:border-cyan-500 text-left flex items-center justify-between text-xs transition-all cursor-pointer">
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="font-mono font-bold text-cyan-500">${t.ticketNumber}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-500/20 text-red-500 uppercase">${t.priority}</span>
+              </div>
+              <strong class="block truncate max-w-[280px]">${t.summary}</strong>
+              <span class="text-[11px] theme-text-muted">${t.locality}</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-[11px]">Dispatch</span>
+          </button>`;
+      });
+      list.innerHTML = html;
+      document.getElementById('assignGangModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function confirmCrewDispatchTicket(ticketId) {
+      if (gangModalTargetCrewId) {
+        const c = CREWS.find(cr => cr.id === gangModalTargetCrewId);
+        const tech = (c.members || []).find(m => m.status === 'AVAILABLE') || (c.members || [])[0];
+        if (tech) {
+          confirmAssignTechnicianToTicket(tech.id, ticketId);
+        }
+      }
+    }
+
+    // Initialize MapLibre with both Dark and Light Raster Sources Pre-Loaded!
+    function initMap() {
+      mapInstance = new maplibregl.Map({
+        container: 'map',
+        style: {
+          version: 8,
+          sources: {
+            'osm-dark': {
+              type: 'raster',
+              tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '© OpenStreetMap, © CARTO (TSSPDCL Hyderabad)'
+            },
+            'osm-light': {
+              type: 'raster',
+              tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '© OpenStreetMap, © CARTO (TSSPDCL Hyderabad)'
+            }
+          },
+          layers: [
+            {
+              id: 'osm-dark-layer',
+              type: 'raster',
+              source: 'osm-dark',
+              layout: { visibility: 'visible' }
+            },
+            {
+              id: 'osm-light-layer',
+              type: 'raster',
+              source: 'osm-light',
+              layout: { visibility: 'none' }
+            }
+          ]
+        },
+        center: [78.3820, 17.4460],
+        zoom: 14.5
+      });
+
+      mapInstance.on('load', () => {
+        // Feeder Lines
+        mapInstance.addSource('feeders', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                properties: { color: '#ef4444' },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [78.3790, 17.4490], // Madhapur 33kV Substation
+                    [78.3805, 17.4480],
+                    [78.3820, 17.4465], // DTR-MDP-102
+                    [78.3860, 17.4425], // DTR-MDP-101
+                    [78.3910, 17.4485]  // DTR-MDP-103
+                  ]
+                }
+              },
+              {
+                type: 'Feature',
+                properties: { color: '#10b981' },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [78.3680, 17.4620], // Kondapur 33kV Substation
+                    [78.3665, 17.4630],
+                    [78.3650, 17.4640],
+                    [78.3620, 17.4580]
+                  ]
+                }
+              }
+            ]
+          }
+        });
+        mapInstance.addLayer({
+          id: 'feeder-lines',
+          type: 'line',
+          source: 'feeders',
+          paint: { 'line-color': ['get', 'color'], 'line-width': 4.5, 'line-opacity': 0.85 }
+        });
+
+        // Service Drop Lines (DTR to Consumer)
+        mapInstance.addSource('service-drops', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              { type: 'Feature', geometry: { type: 'LineString', coordinates: [[78.3820, 17.4465], [78.3824, 17.4468]] } },
+              { type: 'Feature', geometry: { type: 'LineString', coordinates: [[78.3860, 17.4425], [78.3862, 17.4422]] } }
+            ]
+          }
+        });
+        mapInstance.addLayer({
+          id: 'drops',
+          type: 'line',
+          source: 'service-drops',
+          paint: { 'line-color': '#a855f7', 'line-width': 2, 'line-dasharray': [2, 2] }
+        });
+
+        // 33/11kV Substations
+        mapInstance.addSource('substations', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              { type: 'Feature', properties: { code: 'SS-MADHAPUR-33KV', name: 'Madhapur 33/11kV Substation' }, geometry: { type: 'Point', coordinates: [78.3790, 17.4490] } },
+              { type: 'Feature', properties: { code: 'SS-KONDAPUR-33KV', name: 'Kondapur 33/11kV Substation' }, geometry: { type: 'Point', coordinates: [78.3680, 17.4620] } },
+              { type: 'Feature', properties: { code: 'SS-GACHIBOWLI-33KV', name: 'Gachibowli 33/11kV Substation' }, geometry: { type: 'Point', coordinates: [78.3580, 17.4380] } }
+            ]
+          }
+        });
+        mapInstance.addLayer({
+          id: 'substations-pt',
+          type: 'circle',
+          source: 'substations',
+          paint: { 'circle-radius': 11, 'circle-color': '#0284c7', 'circle-stroke-width': 3, 'circle-stroke-color': '#fff' }
+        });
+
+        // DTR Transformers
+        mapInstance.addSource('dtrs', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              { type: 'Feature', properties: { code: 'DTR-MDP-102', name: '250kVA DTR Ayyappa Society', state: 'DOWN', color: '#ef4444', consumers: 320 }, geometry: { type: 'Point', coordinates: [78.3820, 17.4465] } },
+              { type: 'Feature', properties: { code: 'DTR-MDP-101', name: '100kVA DTR Kavuri Hills', state: 'DOWN', color: '#ef4444', consumers: 180 }, geometry: { type: 'Point', coordinates: [78.3860, 17.4425] } },
+              { type: 'Feature', properties: { code: 'DTR-MDP-103', name: '160kVA DTR 100ft Road', state: 'DOWN', color: '#ef4444', consumers: 240 }, geometry: { type: 'Point', coordinates: [78.3910, 17.4485] } },
+              { type: 'Feature', properties: { code: 'DTR-KND-201', name: '250kVA DTR Kondapur Circle', state: 'HEALTHY', color: '#10b981', consumers: 0 }, geometry: { type: 'Point', coordinates: [78.3650, 17.4640] } }
+            ]
+          }
+        });
+        mapInstance.addLayer({
+          id: 'dtrs-glow',
+          type: 'circle',
+          source: 'dtrs',
+          paint: { 'circle-radius': 15, 'circle-color': ['get', 'color'], 'circle-opacity': 0.25 }
+        });
+        mapInstance.addLayer({
+          id: 'dtrs-pt',
+          type: 'circle',
+          source: 'dtrs',
+          paint: { 'circle-radius': 7.5, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff' }
+        });
+
+        // End User Premises (USC Meters)
+        mapInstance.addSource('consumers', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              { type: 'Feature', properties: { usc: '1104-58293', name: 'B. Venkatesh Goud' }, geometry: { type: 'Point', coordinates: [78.3824, 17.4468] } },
+              { type: 'Feature', properties: { usc: '1104-58294', name: 'K. Lakshmi Rao' }, geometry: { type: 'Point', coordinates: [78.3862, 17.4422] } }
+            ]
+          }
+        });
+        mapInstance.addLayer({
+          id: 'consumers-pt',
+          type: 'circle',
+          source: 'consumers',
+          paint: { 'circle-radius': 4.5, 'circle-color': '#c084fc', 'circle-stroke-width': 1.5, 'circle-stroke-color': '#fff' }
+        });
+
+        // Click Inspection
+        mapInstance.on('click', 'dtrs-pt', (e) => {
+          if (!e.features || !e.features[0]) return;
+          const p = e.features[0].properties;
+          showAssetInspector(p.code, p.name, p.state, p.consumers);
+        });
+
+        mapInstance.on('click', 'consumers-pt', (e) => {
+          if (!e.features || !e.features[0]) return;
+          const p = e.features[0].properties;
+          showAssetInspector(`USC: ${p.usc}`, p.name, 'CONSUMER PREMISE', 'Service Drop Connected');
+        });
+
+        mapInstance.on('mouseenter', 'dtrs-pt', () => mapInstance.getCanvas().style.cursor = 'pointer');
+        mapInstance.on('mouseleave', 'dtrs-pt', () => mapInstance.getCanvas().style.cursor = '');
+      });
+    }
+
+    function showAssetInspector(code, name, state, consumers) {
+      const el = document.getElementById('assetInspector');
+      document.getElementById('inspectCode').textContent = code;
+      document.getElementById('inspectName').textContent = name;
+      document.getElementById('inspectState').textContent = state;
+      document.getElementById('inspectConsumers').textContent = consumers + (typeof consumers === 'number' ? ' meters' : '');
+      el.classList.remove('hidden');
+    }
+
+    function resetMapView() {
+      if (mapInstance) {
+        mapInstance.flyTo({ center: [78.3820, 17.4460], zoom: 14.5, duration: 1000 });
+      }
+    }
+
+    function switchScenario(scId) {
+      currentScenarioId = scId;
+      const s = SCENARIOS[scId];
+      if (!s) return;
+
+      selectHub(s.hubId);
+
+      const matchedTicket = TICKETS.find(t => t.ticketNumber === s.ticketNumber);
+      if (matchedTicket) {
+        currentTicketId = matchedTicket.id;
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+
+      const callerEl = document.getElementById('callerNumberDisplay');
+      if (callerEl) callerEl.textContent = s.callerNumber;
+      const hypoTitle = document.getElementById('hypoTitle');
+      if (hypoTitle) hypoTitle.textContent = s.hypo.title;
+      const hypoScore = document.getElementById('hypoScore');
+      if (hypoScore) hypoScore.textContent = s.hypo.score;
+      const hypoExp = document.getElementById('hypoExplanation');
+      if (hypoExp) hypoExp.textContent = s.hypo.desc;
+
+      const evBox = document.getElementById('evidenceBadges');
+      if (evBox) {
+        evBox.innerHTML = '<span class="text-[10px] theme-text-muted font-medium">Evidence:</span>';
+        s.hypo.evidence.forEach(ev => {
+          evBox.innerHTML += `<span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[9px] px-1.5 py-0.5 rounded font-mono">${ev}</span>`;
+        });
+      }
+
+      addAuditLog('SCENARIO_LOADED', `Loaded TSSPDCL Scenario: "${scId}"`);
+    }
+
+    function triggerCallSimulation() {
+      const s = SCENARIOS[currentScenarioId];
+      const statusBadge = document.getElementById('callStatusBadge');
+      const waveBox = document.getElementById('audioWaveBox');
+      const transContainer = document.getElementById('transcriptContainer');
+      const ping = document.getElementById('callNavPing');
+
+      navigateToPage('calls');
+
+      transContainer.innerHTML = '';
+      callDurationSecs = 0;
+      clearInterval(callTimerInterval);
+
+      statusBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">1912 RINGING...</span>';
+      ping.classList.remove('hidden');
+      waveBox.classList.add('hidden');
+      addAuditLog('1912_INBOUND_RINGING', `Consumer calling 1912 from ${s.callerNumber}`);
+
+      setTimeout(() => {
+        statusBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block mr-1"></span> LIVE CALL</span>';
+        waveBox.classList.remove('hidden');
+
+        callTimerInterval = setInterval(() => {
+          callDurationSecs++;
+          const mins = Math.floor(callDurationSecs / 60).toString().padStart(2, '0');
+          const secs = (callDurationSecs % 60).toString().padStart(2, '0');
+          document.getElementById('durationTimer').textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        s.transcript.forEach((t, i) => {
+          setTimeout(() => {
+            renderTranscriptBubble(t);
+          }, (i + 1) * 2000);
+        });
+
+        setTimeout(() => {
+          statusBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/20 text-blue-500 border border-blue-500/30">CALL FINALIZED</span>';
+          waveBox.classList.add('hidden');
+          ping.classList.add('hidden');
+          clearInterval(callTimerInterval);
+          addAuditLog('TICKET_ACKNOWLEDGED', `Ticket ${s.ticketNumber} SMS sent to ${s.recipientContact}`);
+        }, (s.transcript.length + 1) * 2000);
+
+      }, 1500);
+    }
+
+    function renderTranscriptBubble(t) {
+      const transContainer = document.getElementById('transcriptContainer');
+      const isAgent = t.speaker === 'AI_AGENT';
+      const isSys = t.speaker === 'SYSTEM';
+
+      if (isSys) {
+        transContainer.innerHTML += `
+          <div class="flex justify-center my-1">
+            <div class="theme-inner text-cyan-500 text-[10px] px-2.5 py-0.5 rounded-full border theme-border flex items-center gap-1 font-semibold">
+              <i data-lucide="cpu" class="w-3 h-3 text-cyan-500"></i><span>${t.text}</span>
+            </div>
+          </div>`;
+      } else {
+        transContainer.innerHTML += `
+          <div class="flex gap-2 items-start ${isAgent ? 'flex-row' : 'flex-row-reverse'}">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] ${isAgent ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/30' : 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/30'}">
+              <i data-lucide="${isAgent ? 'bot' : 'user'}" class="w-3 h-3"></i>
+            </div>
+            <div class="max-w-[85%] rounded-xl p-2.5 text-xs ${isAgent ? 'theme-inner border theme-border' : 'bg-cyan-600 text-white shadow-sm'}">
+              <div class="flex justify-between gap-2 text-[9px] ${isAgent ? 'theme-text-muted' : 'text-cyan-100'} mb-0.5">
+                <span class="font-bold">${isAgent ? 'TSSPDCL 1912 Care' : 'Consumer'}</span>
+                <span>${t.time}</span>
+              </div>
+              <p class="leading-relaxed text-[11px]">${t.text}</p>
+            </div>
+          </div>`;
+      }
+      lucide.createIcons();
+      transContainer.scrollTop = transContainer.scrollHeight;
+    }
+
+    function addAuditLog(action, details) {
+      const list = document.getElementById('auditLogList');
+      const time = new Date().toLocaleTimeString();
+      list.innerHTML = `
+        <div class="text-[11px] theme-inner p-2 rounded-xl border theme-border">
+          <div class="flex justify-between text-[10px] theme-text-muted mb-0.5">
+            <span class="font-bold text-cyan-500">${action}</span>
+            <span>${time}</span>
+          </div>
+          <p class="leading-tight">${details}</p>
+        </div>` + list.innerHTML;
+    }
+
+    function renderTicketsList() {
+      const container = document.getElementById('ticketsMasterList');
+      if (!container) return;
+
+      const filtered = TICKETS.filter(t => {
+        if (ticketStatusFilter === 'ACTIVE' && t.status !== 'OPEN' && t.status !== 'IN_PROGRESS') return false;
+        if (ticketStatusFilter === 'OPEN' && t.status !== 'OPEN') return false;
+        if (ticketStatusFilter === 'IN_PROGRESS' && t.status !== 'IN_PROGRESS') return false;
+        if (ticketStatusFilter === 'RESOLVED' && t.status !== 'RESOLVED') return false;
+        if (ticketStatusFilter === 'ESCALATED' && t.status !== 'ESCALATED') return false;
+
+        if (ticketPriorityFilter !== 'ALL' && t.priority !== ticketPriorityFilter) return false;
+        if (ticketSectionFilter !== 'ALL' && !t.sectionOffice.includes(ticketSectionFilter)) return false;
+
+        if (ticketSearchQuery.trim()) {
+          const q = ticketSearchQuery.toLowerCase();
+          const match = t.ticketNumber.toLowerCase().includes(q) ||
+                        t.summary.toLowerCase().includes(q) ||
+                        t.locality.toLowerCase().includes(q) ||
+                        t.primaryAssetCode.toLowerCase().includes(q) ||
+                        t.serviceConnectionNo.toLowerCase().includes(q) ||
+                        (t.assignedCrewName && t.assignedCrewName.toLowerCase().includes(q));
+          if (!match) return false;
+        }
+        return true;
+      });
+
+      // Update Header & KPI counts
+      const totalEl = document.getElementById('kpiTotalCount');
+      if (totalEl) totalEl.textContent = TICKETS.length;
+      const actEl = document.getElementById('kpiActiveCount');
+      if (actEl) actEl.textContent = TICKETS.filter(t => t.status === 'OPEN').length;
+      const inPEl = document.getElementById('kpiInProgressCount');
+      if (inPEl) inPEl.textContent = TICKETS.filter(t => t.status === 'IN_PROGRESS').length;
+      const resEl = document.getElementById('kpiResolvedCount');
+      if (resEl) resEl.textContent = TICKETS.filter(t => t.status === 'RESOLVED').length;
+
+      const headerCount = document.getElementById('ticketsListHeaderCount');
+      if (headerCount) headerCount.textContent = `Showing ${filtered.length} Incidents`;
+
+      const bAll = document.getElementById('badge-status-ALL');
+      if (bAll) bAll.textContent = TICKETS.length;
+      const bAct = document.getElementById('badge-status-ACTIVE');
+      if (bAct) bAct.textContent = TICKETS.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+      const bOpen = document.getElementById('badge-status-OPEN');
+      if (bOpen) bOpen.textContent = TICKETS.filter(t => t.status === 'OPEN').length;
+      const bInp = document.getElementById('badge-status-IN_PROGRESS');
+      if (bInp) bInp.textContent = TICKETS.filter(t => t.status === 'IN_PROGRESS').length;
+      const bRes = document.getElementById('badge-status-RESOLVED');
+      if (bRes) bRes.textContent = TICKETS.filter(t => t.status === 'RESOLVED').length;
+      const bEsc = document.getElementById('badge-status-ESCALATED');
+      if (bEsc) bEsc.textContent = TICKETS.filter(t => t.status === 'ESCALATED').length;
+
+      const openCount = TICKETS.filter(t => t.status === 'OPEN').length;
+      const sbCount = document.getElementById('sidebarIncidentsCount');
+      if (sbCount) sbCount.textContent = openCount;
+      const sbSub = document.getElementById('sidebarIncidentsSubtext');
+      if (sbSub) sbSub.textContent = `${openCount} Active Ticket${openCount === 1 ? '' : 's'}`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 rounded-2xl border theme-border theme-inner text-center text-xs theme-text-muted">
+            <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p class="font-semibold">No incidents match the selected filters</p>
+            <p class="text-[11px] mt-1">Try resetting filters or search query.</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(t => {
+        const isSel = t.id === currentTicketId;
+        const isResolved = t.status === 'RESOLVED';
+        const isP1 = t.priority === 'P1_CRITICAL';
+
+        let prioClass = 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+        if (isP1) prioClass = 'bg-red-500/20 text-red-500 border-red-500/30';
+        else if (t.priority === 'P2_HIGH') prioClass = 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+
+        let statusClass = 'bg-blue-500/20 text-blue-500 border-blue-500/30';
+        if (isResolved) statusClass = 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30';
+        else if (t.status === 'IN_PROGRESS') statusClass = 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+        else if (t.status === 'ESCALATED') statusClass = 'bg-red-500/20 text-red-500 border-red-500/30';
+
+        html += `
+          <div onclick="selectTicket('${t.id}')" class="p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm relative ${
+            isSel ? 'border-cyan-500 bg-cyan-500/10 shadow-cyan-500/10' : 'theme-card theme-border hover:border-slate-500/50'
+          }">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold font-mono text-cyan-500">${t.ticketNumber}</span>
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${prioClass}">
+                  ${t.priority}
+                </span>
+              </div>
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusClass}">
+                ${t.status}
+              </span>
+            </div>
+
+            <h4 class="text-xs font-bold leading-snug line-clamp-2 mb-1">${t.summary}</h4>
+            <p class="text-[11px] theme-text-muted mb-2">${t.locality}</p>
+
+            <div class="p-2 rounded-xl theme-inner border theme-border text-[11px] flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-cyan-500"></i>
+                <span class="font-mono font-semibold">${t.primaryAssetCode}</span>
+              </div>
+              <span class="${t.consumersAffected ? 'text-red-500 font-semibold' : 'theme-text-muted'}">
+                ${t.consumersAffected ? t.consumersAffected + ' meters' : 'Individual Meter'}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] theme-text-muted pt-1.5 border-t theme-border">
+              <div class="flex items-center gap-1">
+                <i data-lucide="clock" class="w-3 h-3"></i>
+                <span>Created: ${t.createdAt}</span>
+              </div>
+              ${isResolved ? `
+                <div class="flex items-center gap-1 text-emerald-500 font-semibold">
+                  <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                  <span>Resolved (${t.durationText || 'Done'})</span>
+                </div>` : `
+                <div class="flex items-center gap-1 text-cyan-500">
+                  <i data-lucide="message-square" class="w-3 h-3"></i>
+                  <span>${t.comments.length} notes</span>
+                </div>`}
+            </div>
+          </div>`;
+      });
+
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function selectTicket(id) {
+      currentTicketId = id;
+      renderTicketsList();
+      renderSelectedTicket();
+    }
+
+    function renderSelectedTicket() {
+      const container = document.getElementById('selectedTicketContainer');
+      if (!container) return;
+
+      const t = TICKETS.find(x => x.id === currentTicketId) || TICKETS[0];
+      if (!t) {
+        container.innerHTML = '<div class="text-center py-20 theme-text-muted text-xs">No incident ticket selected.</div>';
+        return;
+      }
+
+      const isResolved = t.status === 'RESOLVED';
+      const isP1 = t.priority === 'P1_CRITICAL';
+
+      let prioClass = 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      if (isP1) prioClass = 'bg-red-500/20 text-red-500 border-red-500/30';
+      else if (t.priority === 'P2_HIGH') prioClass = 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+
+      let statusClass = 'bg-blue-500/20 text-blue-500 border-blue-500/30';
+      if (isResolved) statusClass = 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30';
+      else if (t.status === 'IN_PROGRESS') statusClass = 'bg-amber-500/20 text-amber-500 border-amber-500/30';
+      else if (t.status === 'ESCALATED') statusClass = 'bg-red-500/20 text-red-500 border-red-500/30';
+
+      let commentsHtml = '';
+      t.comments.forEach(c => {
+        let roleBadge = 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30';
+        if (c.role === 'AI_SYSTEM') roleBadge = 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+        else if (c.role === 'FIELD_CREW') roleBadge = 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
+        else if (c.role === 'SUPERVISOR') roleBadge = 'bg-red-500/20 text-red-400 border border-red-500/30';
+
+        commentsHtml += `
+          <div class="p-2.5 rounded-xl border theme-border theme-card text-xs">
+            <div class="flex items-center justify-between mb-1 text-[10px]">
+              <div class="flex items-center gap-2">
+                <span class="font-bold">${c.author}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${roleBadge}">${c.role}</span>
+              </div>
+              <span class="theme-text-muted">${c.timestamp}</span>
+            </div>
+            <p class="text-[11px] leading-relaxed">${c.content}</p>
+          </div>`;
+      });
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <!-- Header & Actions -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b theme-border">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xl font-bold font-mono tracking-tight text-cyan-500">${t.ticketNumber}</span>
+                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase ${prioClass}">
+                  ${t.priority}
+                </span>
+                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${statusClass}">
+                  ${t.status}
+                </span>
+              </div>
+              <h3 class="text-sm font-bold leading-relaxed">${t.summary}</h3>
+            </div>
+
+            <!-- Operator Control Buttons -->
+            <div class="flex items-center gap-2 flex-wrap">
+              ${!isResolved ? `
+                <button onclick="openResolveModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/30 transition-all cursor-pointer">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i><span>Resolve Incident</span>
+                </button>
+                <button onclick="openAssignTechModalForTicket('${t.id}')" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
+                  <i data-lucide="user-check" class="w-3.5 h-3.5"></i><span>Assign Field Technician</span>
+                </button>
+                ${t.status !== 'ESCALATED' ? `
+                  <button onclick="escalateTicket()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-xs font-semibold shadow-md shadow-red-600/30 transition-all cursor-pointer">
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i><span>Escalate DE</span>
+                  </button>` : ''}
+              ` : `
+                <button onclick="reopenTicket()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-md shadow-amber-600/30 transition-all cursor-pointer">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reopen Incident</span>
+                </button>`}
+            </div>
+          </div>
+
+          <!-- Lifecycle Metrics Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="p-3 rounded-xl border theme-border theme-inner">
+              <span class="text-[10px] theme-text-muted block uppercase font-semibold">Created At</span>
+              <span class="text-xs font-mono font-bold">${t.createdAt}</span>
+            </div>
+            <div class="p-3 rounded-xl border theme-border theme-inner">
+              <span class="text-[10px] theme-text-muted block uppercase font-semibold">Resolved At</span>
+              <span class="text-xs font-mono font-bold ${t.resolvedAt ? 'text-emerald-500' : 'text-amber-500'}">
+                ${t.resolvedAt || 'Active / In Triage'}
+              </span>
+            </div>
+            <div class="p-3 rounded-xl border theme-border theme-inner">
+              <span class="text-[10px] theme-text-muted block uppercase font-semibold">Duration / MTTR</span>
+              <span class="text-xs font-mono font-bold">${t.durationText || (t.resolvedAt ? '45m' : 'In Progress')}</span>
+            </div>
+            <div class="p-3 rounded-xl border theme-border theme-inner">
+              <span class="text-[10px] theme-text-muted block uppercase font-semibold">TSSPDCL Section</span>
+              <span class="text-xs font-semibold text-cyan-500">${t.sectionOffice}</span>
+            </div>
+          </div>
+
+          <!-- Personnel & Assigned Technician Card (Who Worked On It) -->
+          <div class="p-3.5 rounded-xl border theme-border theme-inner">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold flex items-center gap-1.5 text-cyan-500">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span>Field Personnel &amp; Individual Technician Assigned</span>
+              </span>
+              <span class="text-[10px] font-mono theme-text-muted">TSSPDCL Operation &amp; Maintenance</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div class="space-y-1">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                  <span class="theme-text-muted">Assigned Technician:</span>
+                  <strong class="text-cyan-500">${t.assignedTechnicianName || t.assignedCrewLead}</strong>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="theme-text-muted">Designation:</span>
+                  <strong>${t.assignedTechnicianRole || 'Senior Lineman'}</strong>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="theme-text-muted">Direct Lineman Phone:</span>
+                  <a href="tel:${t.assignedTechnicianPhone || t.assignedCrewPhone}" class="font-mono text-cyan-500 hover:underline">
+                    ${t.assignedTechnicianPhone || t.assignedCrewPhone}
+                  </a>
+                </div>
+              </div>
+
+              <div class="space-y-1 border-t md:border-t-0 md:border-l md:pl-3 theme-border">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="truck" class="w-3.5 h-3.5 text-cyan-500"></i>
+                  <span class="theme-text-muted">Section Gang:</span>
+                  <strong>${t.assignedCrewName}</strong>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="theme-text-muted">Fleet Vehicle:</span>
+                  <span class="font-mono text-cyan-500">${t.assignedCrewVehicle}</span>
+                  <span class="theme-text-muted ml-2">Lead:</span>
+                  <span>${t.assignedCrewLead}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="theme-text-muted">NOC Dispatcher:</span>
+                  <strong>${t.assignedOperatorName}</strong>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="theme-text-muted">Substation:</span>
+                  <span>${t.substationName}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Official Resolution Report (if resolved) -->
+          ${isResolved ? `
+            <div class="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-xl text-xs text-emerald-600 dark:text-emerald-300">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                  <span class="font-bold">Official TSSPDCL Restoration Report</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+                  ${t.resolutionCategory || 'Restoration Verified'}
+                </span>
+              </div>
+              <p class="leading-relaxed">${t.resolutionReason}</p>
+              <div class="mt-2 text-[10px] text-emerald-500 flex items-center justify-between border-t border-emerald-500/20 pt-1.5">
+                <span>Restored at: ${t.resolvedAt}</span>
+                <span>Verified by: ${t.assignedOperatorName}</span>
+              </div>
+            </div>` : ''}
+
+          <!-- Consumer SMS Dispatch -->
+          <div class="p-3 rounded-xl border theme-border theme-inner text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="mail" class="w-4 h-4 text-cyan-500"></i>
+              <div>
+                <span class="font-semibold block text-xs">TSSPDCL Automated Consumer Notice (${t.acknowledgementChannel})</span>
+                <span class="text-[11px] theme-text-muted">Dispatched to: ${t.recipientContact}</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-2 py-0.5 rounded">
+              ${t.acknowledgementStatus}
+            </span>
+          </div>
+
+          <!-- Activity & Comments Work Log Thread -->
+          <div class="p-3.5 rounded-xl border theme-border theme-inner space-y-3">
+            <div class="flex items-center justify-between border-b theme-border pb-2">
+              <span class="text-xs font-bold flex items-center gap-1.5 text-cyan-500">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <span>Activity Log &amp; Work Comments (${t.comments.length})</span>
+              </span>
+              <span class="text-[10px] theme-text-muted font-mono">Immutable Thread</span>
+            </div>
+
+            <!-- Comments Stream -->
+            <div class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+              ${commentsHtml}
+            </div>
+
+            <!-- Add Work Note Form -->
+            <form onsubmit="handlePostComment(event)" class="pt-2 border-t theme-border space-y-2">
+              <div class="flex items-center gap-2">
+                <select id="newCommentRoleSelect" onchange="updateCommentAuthor(this.value)" class="text-[11px] rounded-lg px-2 py-1 border theme-border theme-input outline-none cursor-pointer">
+                  <option value="OPERATOR">NOC Operator</option>
+                  <option value="FIELD_CREW">Field Gang Lineman</option>
+                  <option value="SUPERVISOR">Section AE / DE</option>
+                </select>
+                <span id="commentAuthorDisplay" class="text-[10px] theme-text-muted">Author: Operator Ramesh Varma</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input
+                  id="newCommentTextInput"
+                  type="text"
+                  placeholder="Add internal note, crew update, or patrol remark..."
+                  class="flex-1 text-xs rounded-xl px-3 py-2 border theme-border theme-input outline-none"
+                />
+                <button
+                  type="submit"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold cursor-pointer shadow-md"
+                >
+                  <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                  <span>Post Note</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>`;
+
+      lucide.createIcons();
+    }
+
+    function setTicketStatusFilter(status) {
+      ticketStatusFilter = status;
+      ['ALL', 'ACTIVE', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED'].forEach(s => {
+        const btn = document.getElementById(`tab-status-${s}`);
+        if (!btn) return;
+        if (s === status) {
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600 text-white shadow-md shadow-cyan-600/30 whitespace-nowrap cursor-pointer';
+        } else {
+          btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold theme-inner theme-border border theme-text-muted hover:border-cyan-500 whitespace-nowrap cursor-pointer';
+        }
+      });
+      renderTicketsList();
+    }
+
+    function setTicketPriorityFilter(p) {
+      ticketPriorityFilter = p;
+      renderTicketsList();
+    }
+
+    function setTicketSectionFilter(sec) {
+      ticketSectionFilter = sec;
+      renderTicketsList();
+    }
+
+    function handleIncidentSearch(val) {
+      ticketSearchQuery = val;
+      renderTicketsList();
+    }
+
+    function resetTicketFilters() {
+      ticketStatusFilter = 'ALL';
+      ticketPriorityFilter = 'ALL';
+      ticketSectionFilter = 'ALL';
+      ticketSearchQuery = '';
+
+      const searchInput = document.getElementById('incidentSearchInput');
+      if (searchInput) searchInput.value = '';
+      const pSel = document.getElementById('priorityFilterSelect');
+      if (pSel) pSel.value = 'ALL';
+      const sSel = document.getElementById('sectionFilterSelect');
+      if (sSel) sSel.value = 'ALL';
+
+      setTicketStatusFilter('ALL');
+    }
+
+    function updateCommentAuthor(role) {
+      const display = document.getElementById('commentAuthorDisplay');
+      if (!display) return;
+      if (role === 'OPERATOR') display.textContent = 'Author: Operator Ramesh Varma';
+      else if (role === 'FIELD_CREW') display.textContent = 'Author: K. Srinivas Reddy (AE / Op)';
+      else if (role === 'SUPERVISOR') display.textContent = 'Author: DE / Technical Cybercity';
+    }
+
+    function handlePostComment(e) {
+      e.preventDefault();
+      const input = document.getElementById('newCommentTextInput');
+      const roleSel = document.getElementById('newCommentRoleSelect');
+      if (!input || !input.value.trim()) return;
+
+      const text = input.value.trim();
+      const role = roleSel ? roleSel.value : 'OPERATOR';
+      let author = 'Operator Ramesh Varma';
+      if (role === 'FIELD_CREW') author = 'K. Srinivas Reddy (AE / Op)';
+      if (role === 'SUPERVISOR') author = 'DE / Technical Cybercity';
+
+      const t = TICKETS.find(x => x.id === currentTicketId);
+      if (t) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+        t.comments.push({
+          id: `c-${Date.now()}`,
+          author,
+          role,
+          content: text,
+          timestamp: `Today, ${time}`
+        });
+
+        addAuditLog('COMMENT_POSTED', `[${t.ticketNumber}] ${author} posted remark: "${text.slice(0, 60)}..."`);
+        renderSelectedTicket();
+        renderTicketsList();
+      }
+    }
+
+    function openResolveModal() {
+      const modal = document.getElementById('resolveModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeResolveModal() {
+      const modal = document.getElementById('resolveModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function confirmResolution() {
+      const reasonInput = document.getElementById('modalReasonInput');
+      const catSelect = document.getElementById('modalCategorySelect');
+      const reason = reasonInput ? reasonInput.value : 'Outage cleared and line energized.';
+      const category = catSelect ? catSelect.value : '11kV Line Patrol & Vegetation Clearance';
+
+      const t = TICKETS.find(x => x.id === currentTicketId);
+      if (t) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+        t.status = 'RESOLVED';
+        t.resolvedAt = `Today, ${time}`;
+        t.durationText = t.durationText || '45m';
+        t.resolutionCategory = category;
+        t.resolutionReason = reason;
+
+        t.comments.push({
+          id: `c-${Date.now()}`,
+          author: t.assignedOperatorName || 'Operator Ramesh Varma',
+          role: 'OPERATOR',
+          content: `Incident resolved: ${reason} [Category: ${category}]`,
+          timestamp: `Today, ${time}`
+        });
+
+        closeResolveModal();
+        addAuditLog('OPERATOR_RESOLVED', `Ticket ${t.ticketNumber} marked resolved: "${reason}"`);
+
+        activeHub.status = 'HEALTHY';
+        activeHub.transformers.forEach(tr => { tr.state = 'HEALTHY'; tr.consumers = 0; });
+        selectHub(activeHub.id);
+
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    function reopenTicket() {
+      const t = TICKETS.find(x => x.id === currentTicketId);
+      if (t) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+        t.status = 'OPEN';
+        t.resolvedAt = null;
+
+        t.comments.push({
+          id: `c-${Date.now()}`,
+          author: 'Operator Ramesh Varma',
+          role: 'OPERATOR',
+          content: 'Ticket re-opened: Consumer reported continued fluctuation.',
+          timestamp: `Today, ${time}`
+        });
+
+        addAuditLog('TICKET_REOPENED', `Ticket ${t.ticketNumber} reopened by Operator.`);
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    let activeModalTargetTicketId = null;
+    let activeModalTargetTechId = null;
+
+    function openAssignTechModalForTicket(ticketId) {
+      activeModalTargetTicketId = ticketId || currentTicketId;
+      activeModalTargetTechId = null;
+
+      const t = TICKETS.find(x => x.id === activeModalTargetTicketId);
+      const title = document.getElementById('assignModalTitle');
+      const list = document.getElementById('gangSelectionList');
+      if (!list) return;
+
+      if (title) {
+        title.textContent = `Dispatch Field Technician to ${t ? t.ticketNumber : 'Outage'}`;
+      }
+
+      const allTechnicians = getAllTechnicians();
+      let html = '';
+      allTechnicians.forEach(tech => {
+        const isAvail = tech.status === 'AVAILABLE';
+        const isAssigned = tech.status === 'ASSIGNED';
+
+        html += `
+          <div class="p-2.5 rounded-xl border theme-border flex items-center justify-between gap-2 text-xs transition-all ${
+            isAvail ? 'theme-inner hover:border-cyan-500' : 'theme-card opacity-60'
+          }">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono ${
+                isAvail ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/30' :
+                isAssigned ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' :
+                'bg-slate-700/50 text-slate-400'
+              }">
+                ${tech.avatarInitials}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold truncate text-xs">${tech.name}</span>
+                  <span class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                    isAvail ? 'bg-emerald-500/20 text-emerald-500' :
+                    isAssigned ? 'bg-amber-500/20 text-amber-500' :
+                    'bg-slate-700/50 text-slate-400'
+                  }">
+                    ${tech.status}
+                  </span>
+                </div>
+                <p class="text-[10px] theme-text-muted truncate">${tech.role} • ${tech.gangName}</p>
+                <div class="text-[10px] text-cyan-500 font-mono mt-0.5">
+                  Vehicle: ${tech.vehicleId} • <a href="tel:${tech.phone}" class="hover:underline">${tech.phone}</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="shrink-0">
+              ${isAvail ? `
+                <button onclick="confirmAssignTechnicianToTicket('${tech.id}', '${activeModalTargetTicketId}')" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs cursor-pointer shadow-sm transition-all active:scale-95">
+                  Dispatch
+                </button>
+              ` : isAssigned ? `
+                <span class="text-[10px] font-mono text-amber-500 font-semibold bg-amber-500/10 px-2 py-1 rounded block">
+                  Busy: ${tech.assignedTicketNumber || 'Active'}
+                </span>
+              ` : `
+                <span class="text-[10px] font-mono theme-text-muted bg-slate-700/30 px-2 py-1 rounded block">
+                  Off-Shift
+                </span>
+              `}
+            </div>
+          </div>`;
+      });
+
+      list.innerHTML = html;
+      document.getElementById('assignGangModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function openAssignTechModalForLineman(techId) {
+      activeModalTargetTechId = techId;
+      activeModalTargetTicketId = null;
+
+      const allTechnicians = getAllTechnicians();
+      const tech = allTechnicians.find(x => x.id === techId);
+      const title = document.getElementById('assignModalTitle');
+      const list = document.getElementById('gangSelectionList');
+      if (!list) return;
+
+      if (title) {
+        title.textContent = `Assign Outage Ticket to ${tech ? tech.name : 'Lineman'}`;
+      }
+
+      const openTkts = TICKETS.filter(t => t.status !== 'RESOLVED');
+      if (openTkts.length === 0) {
+        list.innerHTML = '<div class="text-center py-6 theme-text-muted text-xs">No unresolved outage incidents active at this moment.</div>';
+        document.getElementById('assignGangModal').classList.remove('hidden');
+        return;
+      }
+
+      let html = '';
+      openTkts.forEach(t => {
+        const isP1 = t.priority === 'P1_CRITICAL';
+        html += `
+          <div class="p-2.5 rounded-xl border theme-border theme-inner hover:border-cyan-500 text-xs flex items-center justify-between gap-2 transition-all">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="font-mono font-bold text-cyan-500 text-xs">${t.ticketNumber}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                  isP1 ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'
+                }">${t.priority}</span>
+                <span class="text-[9px] theme-text-muted">${t.sectionOffice}</span>
+              </div>
+              <strong class="block truncate max-w-[280px] text-xs">${t.summary}</strong>
+              <span class="text-[10px] theme-text-muted">${t.locality} • USC: ${t.serviceConnectionNo}</span>
+            </div>
+            <button onclick="confirmAssignTechnicianToTicket('${techId}', '${t.id}')" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs cursor-pointer shadow-sm transition-all shrink-0 active:scale-95">
+              Assign Outage
+            </button>
+          </div>`;
+      });
+
+      list.innerHTML = html;
+      document.getElementById('assignGangModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function confirmAssignTechnicianToTicket(techId, ticketId) {
+      let foundTech = null;
+      let foundGang = null;
+
+      for (const c of CREWS) {
+        if (c.members) {
+          const m = c.members.find(x => x.id === techId);
+          if (m) {
+            foundTech = m;
+            foundGang = c;
+            break;
+          }
+        }
+      }
+
+      const t = TICKETS.find(x => x.id === ticketId);
+      if (foundTech && foundGang && t) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+
+        // Update Technician
+        foundTech.status = 'ASSIGNED';
+        foundTech.assignedTicketId = t.id;
+        foundTech.assignedTicketNumber = t.ticketNumber;
+        foundTech.assignedTaskDescription = t.summary;
+        foundTech.assignedAt = `Today, ${time}`;
+
+        // Update Gang
+        foundGang.status = 'DISPATCHED';
+        foundGang.speedKmph = 38;
+        foundGang.assignedIncidentId = t.id;
+        foundGang.assignedTicketNumber = t.ticketNumber;
+        foundGang.assignedTaskDescription = t.summary;
+        foundGang.location = `${t.locality} (En Route)`;
+        foundGang.assignedAt = `Today, ${time}`;
+
+        // Update Ticket
+        t.allocatedTechnicianId = foundTech.id;
+        t.assignedTechnicianName = foundTech.name;
+        t.assignedTechnicianRole = foundTech.role;
+        t.assignedTechnicianPhone = foundTech.phone;
+
+        t.allocatedCrewId = foundGang.id;
+        t.assignedCrewName = foundGang.name;
+        t.assignedCrewLead = foundGang.lead;
+        t.assignedCrewVehicle = foundGang.vehicle;
+        t.assignedCrewPhone = foundGang.phone;
+
+        if (t.status === 'OPEN') t.status = 'IN_PROGRESS';
+
+        t.comments.push({
+          id: `c-${Date.now()}`,
+          author: 'NOC Dispatch Control',
+          role: 'OPERATOR',
+          content: `Assigned Field Technician ${foundTech.name} (${foundTech.role}, ${foundTech.phone}) from ${foundGang.name}. Vehicle: ${foundGang.vehicle}. En route to ${t.locality}.`,
+          timestamp: `Today, ${time}`
+        });
+
+        closeAssignGangModal();
+        addAuditLog('TECH_ASSIGNED', `Assigned ${foundTech.name} (${foundTech.role}) to outage ${t.ticketNumber}. Squad: ${foundGang.name}.`);
+
+        renderCrews();
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    // Modal Aliases for backward compatibility
+    function openAssignGangModal() {
+      openAssignTechModalForTicket(currentTicketId);
+    }
+
+    function closeAssignGangModal() {
+      document.getElementById('assignGangModal').classList.add('hidden');
+    }
+
+    function confirmAssignGang(crewId) {
+      const c = CREWS.find(cr => cr.id === crewId);
+      const tech = (c && c.members) ? (c.members.find(m => m.status === 'AVAILABLE') || c.members[0]) : null;
+      if (tech) {
+        confirmAssignTechnicianToTicket(tech.id, currentTicketId);
+      }
+    }
+
+    function escalateTicket() {
+      const t = TICKETS.find(x => x.id === currentTicketId);
+      if (t) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' IST';
+        t.status = 'ESCALATED';
+
+        t.comments.push({
+          id: `c-${Date.now()}`,
+          author: 'Operator Ramesh Varma',
+          role: 'OPERATOR',
+          content: 'Escalated to Cybercity Divisional Engineer Breakdown Team.',
+          timestamp: `Today, ${time}`
+        });
+
+        addAuditLog('OPERATOR_ESCALATED', `Ticket ${t.ticketNumber} escalated to Cybercity Divisional Engineer.`);
+        renderTicketsList();
+        renderSelectedTicket();
+      }
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initMap();
+      renderHubPills();
+      selectHub('hub-07');
+      renderCrews();
+      renderTicketsList();
+      renderSelectedTicket();
+      addAuditLog('SYSTEM_BOOT', 'TSSPDCL Hyderabad Metro GridResQ Operations Engine Active.');
+    });
+  </script>
+</body>
+</html>
